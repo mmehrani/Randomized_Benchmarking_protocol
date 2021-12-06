@@ -41,7 +41,7 @@ def generate_clifford_group(num_qubits):
     clifford_glossary = []
     clifford_glossary.extend([CNOT(i,j) for i in range(num_qubits) for j in range(num_qubits)])
     for i in range(num_qubits): clifford_glossary.remove(CNOT(i,i))
-    clifford_glossary.extend([H(i) for i in range(num_qubits)])
+#     clifford_glossary.extend([H(i) for i in range(num_qubits)])
     clifford_glossary.extend([S(i) for i in range(num_qubits)])
     return clifford_glossary
 
@@ -111,7 +111,7 @@ def machine_response_stabilizer_bench(num_qubits, m, k_m, n_m):
 # In[6]:
 
 
-get_ipython().system('ipython nbconvert --to python RB_stabilizer_verification.ipynb')
+get_ipython().system('ipython nbconvert --to python --inplace RB_stabilizer_verification.ipynb')
 
 
 # In[ ]:
