@@ -110,7 +110,7 @@ def stab_transform(current_stab, gate_in_circuit):
             current_stab[performing_qubits] = [I(performing_qubits[0]), X(performing_qubits[1])]
 
         elif stabs_names == ['Z','Y']:
-            current_stab[performing_qubits] = [Z(performing_qubits[0]), Y(performing_qubits[1])]
+            current_stab[performing_qubits] = [I(performing_qubits[0]), Y(performing_qubits[1])]
         elif stabs_names == ['X','Y']:
             current_stab[performing_qubits] = [Y(performing_qubits[0]), Z(performing_qubits[1])]
         elif stabs_names == ['Y','Y']:
@@ -184,16 +184,52 @@ def machine_response_stabilizer_bench(num_qubits, m, k_m, n_m):
 
 
 
+# In[7]:
+
+
+machine_response_stabilizer_bench(num_qubits, m, k_m, n_m)
+
+
+# In[8]:
+
+
+# !ipython nbconvert --to python RB_stabilizer_verification.ipynb
+
+
 # In[ ]:
 
 
 
 
 
-# In[7]:
+# In[ ]:
 
 
-get_ipython().system('ipython nbconvert --to python RB_stabilizer_verification.ipynb')
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
