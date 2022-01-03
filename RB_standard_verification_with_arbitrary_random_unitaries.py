@@ -127,14 +127,14 @@ def machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m):
 # In[7]:
 
 
-response_matrix = machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m)
-response_matrix
+# response_matrix = machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m)
+# response_matrix
 
 
 # In[8]:
 
 
-averageOfFidelity(response_matrix)
+# averageOfFidelity(response_matrix)
 
 
 # In[9]:

@@ -187,7 +187,7 @@ def machine_response_stabilizer_bench(num_qubits, m, k_m, n_m):
 # In[7]:
 
 
-machine_response_stabilizer_bench(num_qubits, m, k_m, n_m)
+# machine_response_stabilizer_bench(num_qubits, m, k_m, n_m)
 
 
 # In[8]:
