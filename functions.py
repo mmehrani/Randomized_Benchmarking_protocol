@@ -7,6 +7,7 @@ Created on Mon Dec  6 11:09:28 2021
 
 
 import numpy as np
+from pyquil import get_qc, Program
 
 # calculate the average fidelity for a given m
 
@@ -29,3 +30,23 @@ def averageOfFidelity(Data_Array):
     Lower_Bound_F = vfunc(Pacc_Array)
     AvergeOf_F = sum(Lower_Bound_F) / k_m
     return AvergeOf_F
+
+def qvirtual_machine(given_program):
+    n_qubits = given_program.get_qubits()
+    qc = get_qc(  str(n_qubits) + 'q-qvm' )
+    
+    executable = qc.compile(given_program)
+    result = qc.run(executable)
+    measured_outcome = result.readout_data.get('ro')
+
+    return measured_outcome
+
+def qreal_machine(given_program):
+    n_qubits = given_program.get_qubits()
+    qc = get_qc(  'Aspen-11',execution_timeout=60, compiler_timeout=100 )
+    
+    executable = qc.compile(given_program)
+    result = qc.run(executable)
+    measured_outcome = result.readout_data.get('ro')
+
+    return measured_outcome

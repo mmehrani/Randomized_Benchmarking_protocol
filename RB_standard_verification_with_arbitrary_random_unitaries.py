@@ -19,7 +19,7 @@ from pyquil.quil import *
 
 import numpy as np
 import random
-from functions import averageOfFidelity
+from functions import averageOfFidelity, qvirtual_machine, qreal_machine
 from scipy.stats import unitary_group
 
 
@@ -67,7 +67,7 @@ def bring_matrix_to_n(matrix_two_d, n_qubits, qubit_ind):
 # In[6]:
 
 
-def machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m):
+def machine_response_standard_bench_random_units(qmachine, num_qubits, m, k_m, n_m):
     """
     It samples and record the accept or reject of the machine.
     ::return response_matrix including accepts and rejects in columns
@@ -109,9 +109,8 @@ def machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m):
         prog = prog.wrap_in_numshots_loop(n_m)
         
         #Run the program
-        qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
-        executable = qc.compile(prog)
-        result = qc.run(executable)
+        executable = qmachine.compile(prog)
+        result = qmachine.run(executable)
         measured_outcome = result.readout_data.get('ro')
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
     
@@ -127,7 +126,7 @@ def machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m):
 # In[7]:
 
 
-# response_matrix = machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m)
+# response_matrix = machine_response_standard_bench_random_units(machine_type, num_qubits, m, k_m, n_m)
 # response_matrix
 
 
@@ -140,7 +139,8 @@ def machine_response_standard_bench_random_units(num_qubits, m, k_m, n_m):
 # In[9]:
 
 
-# !ipython nbconvert --to python RB_standard_verification.ipynb
+if __name__ == "__main__":
+    get_ipython().system('ipython nbconvert --to python RB_standard_verification_with_arbitrary_random_unitaries.ipynb')
 
 
 # In[ ]:
