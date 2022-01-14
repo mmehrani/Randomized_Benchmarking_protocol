@@ -159,6 +159,10 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
         
         prog+= Program(*stabilizer_layer)
         
+        #Do not let the quilc to alter the gates by optimization
+        prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        
         #Measurments
         ro = prog.declare('ro', 'BIT', num_qubits)
         for q in range(num_qubits):
@@ -182,15 +186,10 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
 
 
 # qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
-
-
-# In[8]:
-
-
 # machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
 
 
-# In[9]:
+# In[8]:
 
 
 if __name__ == "__main__":

@@ -24,13 +24,13 @@ import random
 # In[3]:
 
 
-#if __name__ == "__main__":
-    #num_qubits = 2
+if __name__ == "__main__":
+    num_qubits = 2
 
-    #First step choose m and the K_m sequences of 
-    #m = 1
-    #k_m = 10 #n. of diff sequences
-    #n_m = 10  #n. of samples from a certain sequence
+#     First step choose m and the K_m sequences of 
+    m = 5
+    k_m = 10 #n. of diff sequences
+    n_m = 10  #n. of samples from a certain sequence
 
 
 # In[4]:
@@ -40,6 +40,7 @@ def native_reggeti_gate_generator(num_Qbit,num_gates):
     list_gates = []
     for i in range(0,num_gates):
         k = random.randint(1,3)
+#         k = 1
         if k==1:
             s_1 = random.randint(0,num_Qbit-1)
             angle_1 = random.choice([-1,-1/2,+1/2,1])
@@ -80,24 +81,28 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
     response_matrix = np.zeros((k_m,n_m))
     
     for i_sequ in range(k_m):
-        #gate_list = native_reggeti_gate_generator(num_qubits, m)
-        gate_list = iden_generator(num_qubits, m)
-        #compute the unitary of circuit U
+        gate_list = native_reggeti_gate_generator(num_qubits, m)
         prog = Program() #All qubits begin with |0> state
+        
         for gate in gate_list:
             prog += gate
-
+        
+        #compute the unitary of circuit U
         equivalent_unitary = program_unitary(prog, n_qubits= num_qubits)
         
+        if np.all( np.matmul(equivalent_unitary,equivalent_unitary.conj().T) != np.eye(2**num_qubits) ): print('spotted')
         #report the reversed unitary operator of the total transforamtions 
-        #equivalent_unitary_inv = np.linalg.inv(equivalent_unitary)
         equivalent_unitary_inv = equivalent_unitary.conj().T
         equivalent_unitary_inv_def = DefGate("U_r", equivalent_unitary_inv)
         U_r = equivalent_unitary_inv_def.get_constructor() # Get the gate constructor
         
         n_tuple = tuple(range(num_qubits))
         prog += Program( equivalent_unitary_inv_def, U_r(*n_tuple) )
-
+        
+        #Do not let the quilc to alter the gates by optimization
+        prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        
         #Measurments
         ro = prog.declare('ro', 'BIT', num_qubits)
         for q in range(num_qubits):
@@ -113,9 +118,46 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
     return response_matrix
 
 
-# In[7]:
+# In[ ]:
 
 
 if __name__ == "__main__":
     get_ipython().system('ipython nbconvert --to python RB_with_Rigetti_native_gates.ipynb')
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+# qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
+# machine_response_srb_native_gate(qc,num_qubits, m, k_m, n_m)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 

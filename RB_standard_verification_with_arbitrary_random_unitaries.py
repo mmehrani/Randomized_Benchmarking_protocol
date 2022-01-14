@@ -100,7 +100,10 @@ def machine_response_standard_bench_random_units(qmachine, num_qubits, m, k_m, n
         n_tuple = tuple(range(num_qubits))
         prog += Program( circuit_unitary_inv_definition, U_r(*n_tuple) )
 
-
+        #Do not let the quilc to alter the gates by optimization
+        prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        
         #Measurments
         ro = prog.declare('ro', 'BIT', num_qubits)
         for q in range(num_qubits):
