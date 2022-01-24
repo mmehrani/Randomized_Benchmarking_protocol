@@ -71,15 +71,18 @@ def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
         for gate in c_jm:
             prog += gate
 
-        c_jm_unitary = program_unitary(prog, n_qubits= num_qubits)
+#         c_jm_unitary = program_unitary(prog, n_qubits= num_qubits)
 
         #report the reversed unitary operator of the total transforamtions 
-        c_jm_unitary_r = np.linalg.inv( c_jm_unitary )
-        c_jm_unitary_r_definition = DefGate("U_r", c_jm_unitary_r)
-        U_r = c_jm_unitary_r_definition.get_constructor() # Get the gate constructor
+#         c_jm_unitary_r = np.linalg.inv( c_jm_unitary )
+#         c_jm_unitary_r_definition = DefGate("U_r", c_jm_unitary_r)
+#         U_r = c_jm_unitary_r_definition.get_constructor() # Get the gate constructor
 
-        n_tuple = tuple(range(num_qubits))
-        prog += Program( c_jm_unitary_r_definition, U_r(*n_tuple) )
+#         n_tuple = tuple(range(num_qubits))
+#         prog += Program( c_jm_unitary_r_definition, U_r(*n_tuple) )
+        for gate in reversed(c_jm):
+            prog += gate
+    
         
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog

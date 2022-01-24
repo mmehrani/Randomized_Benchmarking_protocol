@@ -88,17 +88,19 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
             prog += gate
         
         #compute the unitary of circuit U
-        equivalent_unitary = program_unitary(prog, n_qubits= num_qubits)
+#         equivalent_unitary = program_unitary(prog, n_qubits= num_qubits)
         
-        if np.all( np.matmul(equivalent_unitary,equivalent_unitary.conj().T) != np.eye(2**num_qubits) ): print('spotted')
-        #report the reversed unitary operator of the total transforamtions 
-        equivalent_unitary_inv = equivalent_unitary.conj().T
-        equivalent_unitary_inv_def = DefGate("U_r", equivalent_unitary_inv)
-        U_r = equivalent_unitary_inv_def.get_constructor() # Get the gate constructor
+#         if np.all( np.matmul(equivalent_unitary,equivalent_unitary.conj().T) != np.eye(2**num_qubits) ): print('spotted')
+#         #report the reversed unitary operator of the total transforamtions 
+#         equivalent_unitary_inv = equivalent_unitary.conj().T
+#         equivalent_unitary_inv_def = DefGate("U_r", equivalent_unitary_inv)
+#         U_r = equivalent_unitary_inv_def.get_constructor() # Get the gate constructor
         
-        n_tuple = tuple(range(num_qubits))
-        prog += Program( equivalent_unitary_inv_def, U_r(*n_tuple) )
+#         n_tuple = tuple(range(num_qubits))
+#         prog += Program( equivalent_unitary_inv_def, U_r(*n_tuple) )
         
+        for gate in reversed(gate_list):
+            prog += gate
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
@@ -118,7 +120,7 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
     return response_matrix
 
 
-# In[ ]:
+# In[7]:
 
 
 if __name__ == "__main__":
@@ -131,7 +133,7 @@ if __name__ == "__main__":
 
 
 
-# In[ ]:
+# In[8]:
 
 
 # qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
