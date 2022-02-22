@@ -9,6 +9,8 @@ Created on Mon Dec  6 11:09:28 2021
 import numpy as np
 from pyquil import get_qc, Program
 
+from pyquil.quil import *
+from pyquil.gates import *
 # calculate the average fidelity for a given m
 
 def calculate_lower_bound(p_jm):
@@ -50,3 +52,19 @@ def qreal_machine(given_program):
     measured_outcome = result.readout_data.get('ro')
 
     return measured_outcome
+
+def daggered_gate(gate):
+    if gate.name in ['CZ','CNOT','H'] :
+        return gate
+    elif gate.name == 'S':
+        return PHASE(- np.pi/2, gate.qubits[0].index)
+    elif gate.name == 'RX':
+        angle = gate.params[0]
+        return RX( - angle, qubit = gate.qubits[0].index)
+    elif gate.name == 'RZ':
+        angle = gate.params[0]
+        return RZ( - angle, qubit = gate.qubits[0].index)
+    
+    else :
+        raise ValueError("This gate daggered is not yet considered!")
+    
