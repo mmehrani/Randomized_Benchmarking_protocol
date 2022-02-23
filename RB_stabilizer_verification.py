@@ -85,7 +85,7 @@ def stab_transform(current_stab, gate_in_circuit):
             
     elif gate_in_circuit.name == 'CNOT':
         performing_qubits = [qubit.index for qubit in gate_in_circuit.qubits] # 0: control_qubit, 1: target_qubit
-        performing_qubits = performing_qubits[::-1] # 0: target_qubit, 1: control_qubit
+#         performing_qubits = performing_qubits[::-1] # 0: target_qubit, 1: control_qubit
         
         stabs_names = [qubit.name for qubit in current_stab[performing_qubits]]
         if stabs_names == ['Z','I']:
@@ -107,7 +107,7 @@ def stab_transform(current_stab, gate_in_circuit):
             current_stab[performing_qubits] = [Z(performing_qubits[0]), Z(performing_qubits[1])]
 
         elif stabs_names == ['Z','X']:
-            current_stab[performing_qubits] = [Z(performing_qubits[0]), X(performing_qubits[1])]
+            current_stab[performing_qubits] = [X(performing_qubits[0]), Z(performing_qubits[1])]
         elif stabs_names == ['X','X']:
             current_stab[performing_qubits] = [X(performing_qubits[0]), I(performing_qubits[1])]
         elif stabs_names == ['Y','X']:
@@ -177,11 +177,12 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
         initial_stabilizer = []
         for q_num in range(num_qubits):
             initial_stabilizer.append( Z(q_num) )
+            
         stabilizer_layer = update_stabilizer( np.array(initial_stabilizer), c_jm )
         
         transformation_new_basis = measure_in_pauli_basis(stabilizer_layer)
         prog+= Program(*transformation_new_basis)
-        print(prog)
+        #print(prog)
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
@@ -221,39 +222,39 @@ if __name__ == "__main__":
 # In[9]:
 
 
-# if __name__ == "__main__":
-qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
-machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
+# # if __name__ == "__main__":
+# qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
+# machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
 
 
 # In[10]:
 
 
-given_circuit = [H(0), S(0),CNOT(1,0)]
-stab = np.array( [Z(0), Z(1)] )
-for gate in given_circuit:
-    stab = stab_transform(stab, gate)
-    print(stab)
+# given_circuit = [CNOT(1,0)]
+# stab = np.array( [Z(0), I(1)] )
+# for gate in given_circuit:
+#     stab = stab_transform(stab, gate)
+#     print(stab)
 
 
 # In[11]:
 
 
-stab = np.array( [Z(0), Z(1)] )
-update_stabilizer(stab,given_circuit)
+# stab = np.array( [Z(0), Z(1)] )
+# update_stabilizer(stab,given_circuit)
 
 
-# In[14]:
+# In[12]:
 
 
-prog = Program( CNOT(0,1).dagger(), Z(0), Y(1), CNOT(0,1))
-program_unitary(prog, n_qubits=2)
+# prog = Program( CNOT(0,1).dagger(), Z(0), I(1), CNOT(0,1))
+# program_unitary(prog, n_qubits=2)
 
 
 # In[13]:
 
 
-get_ipython().run_line_magic('pinfo', 'CNOT')
+# [qubit.index for qubit in CNOT(0,1).qubits]
 
 
 # In[ ]:
