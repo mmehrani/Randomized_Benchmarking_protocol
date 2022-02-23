@@ -84,8 +84,8 @@ def stab_transform(current_stab, gate_in_circuit):
 
             
     elif gate_in_circuit.name == 'CNOT':
-        performing_qubits = [qubit.index for qubit in gate_in_circuit.qubits] 
-        performing_qubits = np.flipud(performing_qubits) # 0: target_qubit, 1: control_qubit
+        performing_qubits = [qubit.index for qubit in gate_in_circuit.qubits] # 0: control_qubit, 1: target_qubit
+        performing_qubits = performing_qubits[::-1] # 0: target_qubit, 1: control_qubit
         
         stabs_names = [qubit.name for qubit in current_stab[performing_qubits]]
         if stabs_names == ['Z','I']:
@@ -226,32 +226,34 @@ qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
 machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
 
 
-# In[ ]:
+# In[10]:
 
 
-given_circuit = [H(1),CNOT(1,0),H(1)]
+given_circuit = [H(0), S(0),CNOT(1,0)]
 stab = np.array( [Z(0), Z(1)] )
 for gate in given_circuit:
     stab = stab_transform(stab, gate)
     print(stab)
 
 
-# In[ ]:
+# In[11]:
 
 
+stab = np.array( [Z(0), Z(1)] )
 update_stabilizer(stab,given_circuit)
 
 
-# In[ ]:
+# In[14]:
 
 
+prog = Program( CNOT(0,1).dagger(), Z(0), Y(1), CNOT(0,1))
+program_unitary(prog, n_qubits=2)
 
 
-
-# In[ ]:
-
+# In[13]:
 
 
+get_ipython().run_line_magic('pinfo', 'CNOT')
 
 
 # In[ ]:
