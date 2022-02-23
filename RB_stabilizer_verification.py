@@ -26,9 +26,9 @@ from functions import averageOfFidelity, qvirtual_machine, qreal_machine
 
 
 if __name__ == "__main__":
-    num_qubits = 3
+    num_qubits = 2
     #First step choose m and the K_m sequences of Clifford group
-    m = 5
+    m = 3
     k_m = 10 #n. of diff sequences
     n_m = 10  #n. of samples from a certain sequence
 
@@ -50,6 +50,10 @@ def generate_clifford_group(num_qubits):
 
 
 def stab_transform(current_stab, gate_in_circuit):
+    """
+    ::params
+    current_stab should be numpy array
+    """
     if gate_in_circuit.name == 'H':
         performing_qubit = gate_in_circuit.qubits[0].index #since it is a single-qubit
         if current_stab[performing_qubit].name == 'Z':
@@ -80,7 +84,9 @@ def stab_transform(current_stab, gate_in_circuit):
 
             
     elif gate_in_circuit.name == 'CNOT':
-        performing_qubits = [qubit.index for qubit in gate_in_circuit.qubits] #since it is a single-qubit
+        performing_qubits = [qubit.index for qubit in gate_in_circuit.qubits] 
+        performing_qubits = np.flipud(performing_qubits) # 0: target_qubit, 1: control_qubit
+        
         stabs_names = [qubit.name for qubit in current_stab[performing_qubits]]
         if stabs_names == ['Z','I']:
             current_stab[performing_qubits] = [Z(performing_qubits[0]), I(performing_qubits[1])]
@@ -135,6 +141,22 @@ def update_stabilizer(init_stab, gates_sequence):
 # In[6]:
 
 
+def measure_in_pauli_basis(stablizer):
+    transform = []
+    for gate in stablizer:
+        performing_qubit = gate.qubits[0].index #since it is a single-qubit
+        if gate.name == 'X':
+            transform.append( H(performing_qubit) )
+        if gate.name == 'Y':
+            transform.extend( [S(performing_qubit).dagger(), H(performing_qubit)] )
+        if gate.name == 'Z' or gate.name == 'I':
+            transform.append( Z(performing_qubit) )
+    return transform
+
+
+# In[7]:
+
+
 def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
     """
     It samples and record the accept or reject of the machine.
@@ -154,11 +176,12 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
 
         initial_stabilizer = []
         for q_num in range(num_qubits):
-            initial_stabilizer.append( np.random.choice([Z(q_num), Z(q_num)]) )
+            initial_stabilizer.append( Z(q_num) )
         stabilizer_layer = update_stabilizer( np.array(initial_stabilizer), c_jm )
         
-        prog+= Program(*stabilizer_layer)
-        
+        transformation_new_basis = measure_in_pauli_basis(stabilizer_layer)
+        prog+= Program(*transformation_new_basis)
+        print(prog)
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
@@ -182,11 +205,10 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
     
 
 
-# In[7]:
+# In[ ]:
 
 
-# qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
-# machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
+
 
 
 # In[8]:
@@ -194,6 +216,30 @@ def machine_response_stabilizer_bench(qmachine, num_qubits, m, k_m, n_m):
 
 if __name__ == "__main__":
     get_ipython().system('ipython nbconvert --to python RB_stabilizer_verification.ipynb')
+
+
+# In[9]:
+
+
+# if __name__ == "__main__":
+qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
+machine_response_stabilizer_bench(qc,num_qubits, m, k_m, n_m)
+
+
+# In[ ]:
+
+
+given_circuit = [H(1),CNOT(1,0),H(1)]
+stab = np.array( [Z(0), Z(1)] )
+for gate in given_circuit:
+    stab = stab_transform(stab, gate)
+    print(stab)
+
+
+# In[ ]:
+
+
+update_stabilizer(stab,given_circuit)
 
 
 # In[ ]:
