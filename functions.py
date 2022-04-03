@@ -23,15 +23,31 @@ def calculate_lower_bound(p_jm):
         if R < 1: R = 1
         return 1 - 1/( R * p_jm**R )
 
+# def averageOfFidelity(Data_Array):
+    
+#     k_m, n_m = Data_Array.shape
+#     Pacc_Array = np.array( [sum(i) for i in Data_Array] ) / n_m
+    
+#     vfunc = np.vectorize(calculate_lower_bound)
+#     Lower_Bound_F = vfunc(Pacc_Array)
+#     AvergeOf_F = sum(Lower_Bound_F) / k_m
+#     return AvergeOf_F
+
 def averageOfFidelity(Data_Array):
     
     k_m, n_m = Data_Array.shape
-    Pacc_Array = np.array( [sum(i) for i in Data_Array] ) / n_m
+    Pacc_Array = np.average(Data_Array, axis = 1)
+    Pacc = np.average(Pacc_Array)
+    # AvergeOf_F_lower_bound = np.average( [1 + np.e * np.log(x) if x!=0 else -100 for x in Pacc_Array] )
+    return Pacc
+
+# def averageOfFidelity(Data_Array):
     
-    vfunc = np.vectorize(calculate_lower_bound)
-    Lower_Bound_F = vfunc(Pacc_Array)
-    AvergeOf_F = sum(Lower_Bound_F) / k_m
-    return AvergeOf_F
+#     k_m, n_m = Data_Array.shape
+#     Pacc_Array = np.average(Data_Array, axis = 1)
+    
+#     AvergeOf_F_lower_bound = np.average( [1 + np.e * np.log(x) if x!=0 else -100 for x in Pacc_Array] )
+#     return AvergeOf_F_lower_bound
 
 def qvirtual_machine(given_program):
     n_qubits = given_program.get_qubits()
