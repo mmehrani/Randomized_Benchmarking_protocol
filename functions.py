@@ -37,6 +37,15 @@ def stdOfFidelity(Data_Array):
     Pacc_err = np.std(Pacc_Array)
     return Pacc_err
 
+
+def decay_func(m,p,a0,b0):
+    return a0*p**m+b0
+
+def decay_param(p,qubit_num):
+    d = 2**qubit_num
+    r = (d-1)*(1-p)/d
+    return r
+
 def qvirtual_machine(given_program):
     n_qubits = given_program.get_qubits()
     qc = get_qc(  str(n_qubits) + 'q-qvm' )
