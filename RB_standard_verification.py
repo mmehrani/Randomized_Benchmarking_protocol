@@ -54,7 +54,7 @@ def generate_clifford_group(num_qubits):
     return clifford_glossary
 
 
-# In[6]:
+# In[12]:
 
 
 def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
@@ -72,26 +72,12 @@ def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
         for gate in c_jm:
             prog += gate
 
-#         c_jm_unitary = program_unitary(prog, n_qubits= num_qubits)
-        
-#         print('The U:',c_jm_unitary)
-        
-#         #report the reversed unitary operator of the total transforamtions 
-#         c_jm_unitary_r = np.linalg.inv( c_jm_unitary )
-        
-#         print('The U_r:',c_jm_unitary_r)
-        
-#         c_jm_unitary_r_definition = DefGate("U_r", c_jm_unitary_r)
-#         U_r = c_jm_unitary_r_definition.get_constructor() # Get the gate constructor
-
-#         n_tuple = tuple(range(num_qubits))
-#         prog += Program( c_jm_unitary_r_definition, U_r(*n_tuple) )
         for gate in reversed(c_jm):
             prog += daggered_gate(gate)
     
         
         #Do not let the quilc to alter the gates by optimization
-        prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog =  Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
         
         #Measurments
@@ -109,15 +95,21 @@ def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
 
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
 #         print(prog)
-    return response_matrix
+    return response_matrix, executable
 
 
-# In[7]:
+# In[15]:
 
 
 if __name__ == "__main__":
     qmachine = get_qc( str(num_qubits) + 'q-qvm')
-    response_matrix = machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m)
+    response_matrix, executable = machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m)
+
+
+# In[16]:
+
+
+print(executable)
 
 
 # In[ ]:
@@ -129,14 +121,8 @@ if __name__ == "__main__":
 # In[ ]:
 
 
-
-
-
-# In[8]:
-
-
-if __name__ == "__main__":
-    get_ipython().system('ipython nbconvert --to python RB_standard_verification.ipynb')
+# if __name__ == "__main__":
+#     !ipython nbconvert --to python RB_standard_verification.ipynb
 
 
 # In[ ]:

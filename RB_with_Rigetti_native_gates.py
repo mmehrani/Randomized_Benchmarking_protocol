@@ -43,22 +43,24 @@ if __name__ == "__main__":
 # In[5]:
 
 
-def native_reggeti_gate_generator(num_Qbit,num_gates):
+def native_reggeti_gate_generator(num_qubit, num_gates):
     list_gates = []
     for i in range(0,num_gates):
-        k = random.randint(1,2)
+        if num_qubit > 1: k = random.randint(1,3)
+        elif num_qubit == 1: k = random.randint(1,2)
+        
         if k==1:
-            s_1 = random.randint(0,num_Qbit-1)
-            angle_1 = random.choice([-1,-1/2,+1/2,1])
-            list_gates.append(RX(angle = angle_1*pi,qubit = s_1))
+            s_1 = random.randint(0,num_qubit-1)
+            angle_1 = random.choice([-1/2,+1/2])
+            list_gates.append(RX(angle = angle_1*pi, qubit = s_1))
         
         if k==2:
-            s_2 = random.randint(0,num_Qbit-1)
+            s_2 = random.randint(0,num_qubit-1)
             angle_2 = (random.random())
-            list_gates.append(RZ(angle = 2*pi*angle_2,qubit = s_2))
+            list_gates.append(RZ(angle = 2*pi*angle_2, qubit = s_2))
             
         if k==3:
-            control_qubit,target_qubit = random.sample(range(0,num_Qbit),2)
+            control_qubit,target_qubit = random.sample(range(0,num_qubit),2)
             list_gates.append(CZ(control_qubit,target_qubit))
     return list_gates
 
@@ -105,7 +107,7 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
             prog += daggered_gate(gate)
             
         #Do not let the quilc to alter the gates by optimization
-        prog = Program('PRAGMA INITIAL_REWIRING "NAIVE"') + Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog =  Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
         
         #Measurments
@@ -127,7 +129,7 @@ def machine_response_srb_native_gate(qmachine, num_qubits, m, k_m, n_m):
 
 
 if __name__ == "__main__":
-    get_ipython().system('ipython nbconvert --to python RB_with_Rigetti_native_gates.ipynb')
+    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates.ipynb --to python')
 
 
 # In[9]:
@@ -136,7 +138,7 @@ if __name__ == "__main__":
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
-    machine_response_srb_native_gate(qc,num_qubits, m, k_m, n_m)
+    response = machine_response_srb_native_gate(qc, num_qubits, m, k_m, n_m)
 
 
 # In[ ]:
