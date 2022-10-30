@@ -95,7 +95,7 @@ def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
 
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
 #         print(prog)
-    return response_matrix, executable
+    return response_matrix
 
 
 # In[15]:
@@ -103,13 +103,11 @@ def machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m):
 
 if __name__ == "__main__":
     qmachine = get_qc( str(num_qubits) + 'q-qvm')
-    response_matrix, executable = machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m)
+    response_matrix = machine_response_standard_bench(qmachine, num_qubits, m, k_m, n_m)
 
 
 # In[16]:
 
-
-print(executable)
 
 
 # In[ ]:

@@ -153,8 +153,8 @@ if __name__ == "__main__":
     epsilon = 1
     p_xi = epsilon/4
     qmachine.qam.gate_noise=(p_xi,p_xi,p_xi)
-    response, excutable = machine_response_rb_native_gate_conditional(qmachine,num_qubits, m, k_m, n_m)
-    response
+    response = machine_response_rb_native_gate_conditional(qmachine,num_qubits, m, k_m, n_m)
+    
 
 
 # In[ ]:
