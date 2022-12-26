@@ -6,7 +6,11 @@ Created on Wed Dec 21 14:57:25 2022
 """
 import numpy as np
 import matplotlib.pyplot as plt
-
+from pyquil.quil import *
+from pyquil.api import get_qc
+from pyquil.gates import *
+from pyquil.latex import display, to_latex
+from pyquil.simulation.tools import lifted_gate, program_unitary, lifted_gate_matrix
 
 
 def convert_to_bloch_vector(rho):
@@ -47,3 +51,43 @@ def plot_bloch_sphere(bloch_vectors):
     ax.scatter(
         bloch_vectors[:,0], bloch_vectors[:,1], bloch_vectors[:, 2], c='#e29d9e', alpha=0.3
     )
+
+G = Program( CPHASE01(-np.pi/2, control=0, target=1), CPHASE10(-np.pi/2, control=0, target=1) )
+
+def arbitary_single_qubit_circuit(theta, phi, si, qubit):
+    return Program( RZ(si, qubit = qubit), RY(phi, qubit = qubit), RZ(theta, qubit = qubit) )
+
+def r_theta_phi_rotation(theta, phi, qubit):
+    return arbitary_single_qubit_circuit( - phi/2, theta, phi/2, qubit)
+
+def give_random_single_qubit_gate(qubit):
+    theta, si = np.random.uniform(0,2*np.pi, size = 2)
+    
+    phi_range = np.linspace(0,np.pi)
+    p_phi = np.sin(phi_range) / np.sum(np.sin(phi_range))
+    phi = np.random.choice(phi_range, p = p_phi)
+    return arbitary_single_qubit_circuit(theta, phi, si, qubit = qubit)
+
+def normalized_abs_angle_dist(angle_range):
+    dist = np.pi - np.abs( np.pi - angle_range )
+    dist /= np.sum(dist)
+    return dist
+
+def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
+    prog = Program(G,  r_theta_phi_rotation(alpha, 0, qubit =qubits[0]),
+                   r_theta_phi_rotation(3*np.pi/2,0, qubit =qubits[1]), G)
+    prog += Program( r_theta_phi_rotation(beta, np.pi/2, qubit = qubits[0]), 
+                    r_theta_phi_rotation(3*np.pi/2, delta, qubit = qubits[1]), G)
+    return prog
+
+def give_random_two_quibt_circuit(qubits):
+    a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
+    
+    angles_range = np.linspace(0,2*np.pi)
+    alpha, beta, delta = np.random.choice(angles_range, p = normalized_abs_angle_dist(angles_range),
+                                          size = 3)
+    
+    prog = Program(a, b )
+    prog += give_v_circuit(alpha, beta, delta, qubits = [0,1])
+    prog += Program(c, d )
+    return prog
