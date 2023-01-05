@@ -8,6 +8,8 @@ Created on Mon Dec  6 11:09:28 2021
 
 import numpy as np
 from pyquil import get_qc, Program
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 from pyquil.quil import *
 from pyquil.gates import *
@@ -161,3 +163,33 @@ def give_random_two_quibt_circuit(qubits):
     prog += Program(c, d )
     return prog
 
+def extrapolate_decay_func(layers_arr, avg_fdlty_arr):
+    try:
+        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr)
+    except:
+        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr, bounds=([0,0,-10], [1., 10., 0.]))
+    return popt, pcov
+
+def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwargs):
+    fig = plt.figure()
+    plt.close(fig)
+    
+    ax = fig.add_subplot()
+
+    axes = kwargs.get('axes', ax)
+    popt, pcov = extrapolate_decay_func(layers_arr, avg_fdlty_arr)
+    
+    axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o', color = 'k')
+    
+    between_layers = np.arange(layers_arr.min(),layers_arr.max()+1,1).astype('int')
+    axes.plot(between_layers, decay_func(between_layers, *popt),
+              label =  label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt,2)))
+
+
+    plt.xlabel('Depth', fontsize=18)
+    plt.ylabel('Average of Fidelity', fontsize=16)
+    # plt.title('RB' + title)
+
+    plt.legend()
+    # plt.close(fig)
+    # fig.savefig('RB_' + title + '.png')
