@@ -2,23 +2,11 @@
 # coding: utf-8
 
 # # Benchmark with conditional formating
-# all we need in the protocal is the random unitaries. rigetti does the task by gate decomposition. A random unitary can be represeted by rotation matrices like this:
-# $$
-# U = R_Z(\phi) R_Y(\theta)\\
-# $$
-# Which in terms of the shortest depth of Rigetti native circuits is:
-# $$
-# U = R_Z(\phi) R_X(\frac{\pi}{2}) R_Z(\theta) R_X( -\frac{\pi}{2}) \\
-# $$
-# If we take a uniform distribution over U, it induces the following conditional distribution over $\theta$ and $\phi$:
-# $$
-# P\{ \theta \} = \frac{\sin \theta}{2\pi}\\
-# P\{ \phi | \theta \} = \frac{1}{2\pi}
-# $$
-
+# All we need in the protocal is the Haar-random unitaries. A random unitary can be represeted by rotation matrices like this:
+# 
 # In this project we benchmark with those conditional probabilities
 
-# In[1]:
+# In[93]:
 
 
 from pyquil import get_qc, Program
@@ -29,7 +17,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary
 from pyquil.quil import *
 
 
-# In[2]:
+# In[94]:
 
 
 import numpy as np
@@ -37,15 +25,16 @@ import math
 from math import pi
 import random
 import copy
+from tqdm import tqdm_notebook as tqdm
 
 
-# In[1]:
+# In[95]:
 
 
 from functions import *
 
 
-# In[4]:
+# In[96]:
 
 
 if __name__ == "__main__":
@@ -63,30 +52,19 @@ if __name__ == "__main__":
 
 
 
-# In[5]:
+# In[97]:
 
 
-def universal_two_qubits_packs_generator(num_qubit, num_layer):
+def universal_two_qubits_packs_generator(qmachine, num_layer):
     list_gates = []
     for index in range(num_layer):
-        list_gates.extend( give_random_two_quibt_circuit([0,1]))
-        
+        draft_circuit = give_random_two_quibt_circuit([0,1])
+        list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     return list_gates
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[6]:
+# In[98]:
 
 
 def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m, k_m, n_m):
@@ -96,8 +74,8 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
     """
     response_matrix = np.zeros((k_m,n_m))
     
-    for i_sequ in range(k_m):
-        gate_list = universal_two_qubits_packs_generator(num_qubits, m)
+    for i_sequ in tqdm(range(k_m), desc = 'Sequences'):
+        gate_list = universal_two_qubits_packs_generator(qmachine, m)
         prog = Program() #All qubits begin with |0> state
         
         for gate in gate_list:
@@ -129,38 +107,20 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
     return response_matrix
 
 
-# In[9]:
-
-
-if __name__ == "__main__":
-    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability.ipynb --to python')
-
-
-# In[10]:
+# In[ ]:
 
 
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
-    response = machine_response_rb_native_gate_conditional(qc, num_qubits, m, k_m, n_m)
+    response = machine_response_rb_universal_two_qubits_conditional(qc, num_qubits, m, k_m, n_m)
 
 
 # In[ ]:
 
 
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
+if __name__ == "__main__":
+    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
 
 
 # In[ ]:
