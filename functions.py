@@ -123,7 +123,9 @@ def plot_bloch_sphere(bloch_vectors):
         bloch_vectors[:,0], bloch_vectors[:,1], bloch_vectors[:, 2], c='#e29d9e', alpha=0.3
     )
 
-G = Program( CPHASE01(-np.pi/2, control=0, target=1), CPHASE10(-np.pi/2, control=0, target=1) )
+def g_gate(control, target):
+    return Program( CPHASE01(-np.pi/2, control=control, target=target),
+                   CPHASE10(-np.pi/2, control=control, target=target) )
 
 def arbitary_single_qubit_circuit(theta, phi, si, qubit):
     return Program( RZ(si, qubit = qubit), RY(phi, qubit = qubit), RZ(theta, qubit = qubit) )
@@ -145,13 +147,13 @@ def normalized_abs_angle_dist(angle_range):
     return dist
 
 def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
-    prog = Program(G,  r_theta_phi_rotation(alpha, 0, qubit =qubits[0]),
-                   r_theta_phi_rotation(3*np.pi/2,0, qubit =qubits[1]), G)
-    prog += Program( r_theta_phi_rotation(beta, np.pi/2, qubit = qubits[0]), 
-                    r_theta_phi_rotation(3*np.pi/2, delta, qubit = qubits[1]), G)
+    prog = Program(g_gate(qubits[0], qubits[1]),  r_theta_phi_rotation(alpha, 0, qubit =qubits[0]),
+                   r_theta_phi_rotation(3*np.pi/2,0, qubit =qubits[1]), g_gate(qubits[0], qubits[1]))
+    prog += Program( r_theta_phi_rotation(beta, np.pi/2, qubit = qubits[0]),
+                    r_theta_phi_rotation(3*np.pi/2, delta, qubit = qubits[1]), g_gate(qubits[0], qubits[1]))
     return prog
 
-def give_random_two_quibt_circuit(qubits):
+def give_random_two_qubit_circuit(qubits):
     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
     
     angles_range = np.linspace(0,2*np.pi)

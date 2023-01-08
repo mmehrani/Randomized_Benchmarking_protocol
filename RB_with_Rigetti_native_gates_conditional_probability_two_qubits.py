@@ -6,7 +6,7 @@
 # 
 # In this project we benchmark with those conditional probabilities
 
-# In[93]:
+# In[1]:
 
 
 from pyquil import get_qc, Program
@@ -17,7 +17,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary
 from pyquil.quil import *
 
 
-# In[94]:
+# In[2]:
 
 
 import numpy as np
@@ -28,13 +28,13 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[95]:
+# In[3]:
 
 
 from functions import *
 
 
-# In[96]:
+# In[4]:
 
 
 if __name__ == "__main__":
@@ -46,25 +46,19 @@ if __name__ == "__main__":
     n_m = 100  #n. of samples from a certain sequence
 
 
-# In[ ]:
-
-
-
-
-
-# In[97]:
+# In[5]:
 
 
 def universal_two_qubits_packs_generator(qmachine, num_layer):
     list_gates = []
     for index in range(num_layer):
-        draft_circuit = give_random_two_quibt_circuit([0,1])
+        draft_circuit = give_random_two_qubit_circuit([0,1])
         list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
     list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     return list_gates
 
 
-# In[98]:
+# In[6]:
 
 
 def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m, k_m, n_m):
@@ -82,12 +76,14 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
             prog += gate
         
         #Come back to our initial state
-        for gate in reversed(gate_list):
-#             prog += copy.deepcopy(gate).dagger() #dagger has replacing operations
-            gate_daggered = copy.deepcopy(gate)
-            gate_daggered.params[0] *= -1 #make daggered rotation 
-            prog += gate_daggered
-            
+#         for gate in reversed(gate_list):
+# #             prog += copy.deepcopy(gate).dagger() #dagger has replacing operations
+#             gate_daggered = copy.deepcopy(gate)
+#             gate_daggered.params[0] *= -1 #make daggered rotation 
+#             prog += gate_daggered
+        u_inverse = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=num_qubits)))
+        prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse))
+        
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
         prog += Program('PRAGMA END_PRESERVE_BLOCK')
@@ -107,7 +103,7 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
     return response_matrix
 
 
-# In[ ]:
+# In[7]:
 
 
 if __name__ == "__main__":
@@ -121,12 +117,6 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
