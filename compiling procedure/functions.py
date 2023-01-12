@@ -88,6 +88,6 @@ def give_random_two_quibt_circuit(qubits):
                                           size = 3)
     
     prog = Program(a, b )
-    prog += give_v_circuit(alpha, beta, delta, qubits = [0,1])
+    prog += give_v_circuit(alpha, beta, delta, qubits = qubits)
     prog += Program(c, d )
     return prog
