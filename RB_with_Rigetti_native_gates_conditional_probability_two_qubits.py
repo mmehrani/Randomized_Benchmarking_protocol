@@ -38,38 +38,39 @@ from functions import *
 
 
 if __name__ == "__main__":
-    num_qubits = 2
+    target_qubits = [0,1]
 
 #     First step choose m and the K_m sequences of 
-    m = 2
-    k_m = 50 #n. of diff sequences
-    n_m = 100  #n. of samples from a certain sequence
+    m = 1
+    k_m = 5 #n. of diff sequences
+    n_m = 5  #n. of samples from a certain sequence
 
 
 # In[5]:
 
 
-def universal_two_qubits_packs_generator(qmachine, num_layer):
+def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
     list_gates = []
     for index in range(num_layer):
-        draft_circuit = give_random_two_qubit_circuit([0,1])
+        draft_circuit = give_random_two_qubit_circuit(target_qubits)
         list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
     list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     return list_gates
 
 
-# In[6]:
+# In[7]:
 
 
-def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m, k_m, n_m):
+def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits:list, m:int, k_m, n_m):
     """
     It samples and record the accept or reject of the machine with native gates chosen with conditions for rigetti.
     ::return response_matrix including accepts and rejects in columns
     """
+    num_qubits = len(target_qubits)
     response_matrix = np.zeros((k_m,n_m))
     
     for i_sequ in tqdm(range(k_m), desc = 'Sequences'):
-        gate_list = universal_two_qubits_packs_generator(qmachine, m)
+        gate_list = universal_two_qubits_packs_generator(qmachine, target_qubits, m)
         prog = Program() #All qubits begin with |0> state
         
         for gate in gate_list:
@@ -81,12 +82,15 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
 #             gate_daggered = copy.deepcopy(gate)
 #             gate_daggered.params[0] *= -1 #make daggered rotation 
 #             prog += gate_daggered
-        u_inverse = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=num_qubits)))
-        prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse))
+        u_inverse_definition = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=2)))
+        U_inverse = u_inverse_definition.get_constructor()
+        
+        prog += u_inverse_definition
+#         prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(*target_qubits)))
         
         #Do not let the quilc to alter the gates by optimization
-        prog = Program('PRAGMA PRESERVE_BLOCK') + prog
-        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+#         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
+#         prog += Program('PRAGMA END_PRESERVE_BLOCK')
         
         #Measurments
         ro = prog.declare('ro', 'BIT', num_qubits)
@@ -103,20 +107,32 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, num_qubits, m
     return response_matrix
 
 
-# In[7]:
+# In[8]:
 
 
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
-    response = machine_response_rb_universal_two_qubits_conditional(qc, num_qubits, m, k_m, n_m)
+    response = machine_response_rb_universal_two_qubits_conditional(qc, [0,1], m, k_m, n_m)
+
+
+# In[9]:
+
+
+if __name__ == "__main__":
+    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
 
 
 # In[ ]:
 
 
-if __name__ == "__main__":
-    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:

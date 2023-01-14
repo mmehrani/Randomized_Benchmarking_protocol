@@ -38,6 +38,7 @@ import math
 from math import pi
 import random
 import copy
+from tqdm import tqdm_notebook as tqdm
 
 
 # In[3]:
@@ -50,7 +51,8 @@ from functions import *
 
 
 if __name__ == "__main__":
-    num_qubits = 1
+    target_qubit = [0]
+    num_qubits = len(target_qubit)
 
 #     First step choose m and the K_m sequences of 
     m = 1
@@ -64,7 +66,7 @@ if __name__ == "__main__":
 
 
 
-# In[8]:
+# In[5]:
 
 
 def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
@@ -105,9 +107,12 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
     It samples and record the accept or reject of the machine with native gates chosen with conditions for rigetti.
     ::return response_matrix including accepts and rejects in columns
     """
+    if type(target_qubit) == list:
+        target_qubit = target_qubit[0]
+        
     response_matrix = np.zeros((k_m,n_m))
     
-    for i_sequ in range(k_m):
+    for i_sequ in tqdm(range(k_m)):
         gate_list = native_rigetti_packs_generator(qmachine, target_qubit, m)
         prog = Program() #All qubits begin with |0> state
         
@@ -125,7 +130,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
         U_inverse = u_inverse_definition.get_constructor()
         
         prog += u_inverse_definition
-        prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(target_qubit)))
+#         prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(*target_qubit)))
         
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
@@ -143,7 +148,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
         measured_outcome = result.readout_data.get('ro')
 
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
-    return prog, response_matrix
+    return response_matrix
 
 
 # In[7]:
@@ -153,25 +158,25 @@ if __name__ == "__main__":
     get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability.ipynb --to python')
 
 
-# In[10]:
+# In[8]:
 
 
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
-    prog, response = machine_response_rb_native_gate_conditional_single_qubit(qc, 0, m, k_m, n_m)
+    response = machine_response_rb_native_gate_conditional_single_qubit(qc, [0], m, k_m, n_m)
 
 
-# In[11]:
+# In[ ]:
 
 
-print(prog)
 
 
-# In[12]:
+
+# In[ ]:
 
 
-get_ipython().run_line_magic('pinfo', 'qc.compiler.quil_to_native_quil')
+
 
 
 # In[ ]:
