@@ -53,7 +53,7 @@ if __name__ == "__main__":
     num_qubits = 1
 
 #     First step choose m and the K_m sequences of 
-    m = 5
+    m = 1
     k_m = 1 #n. of diff sequences
     n_m = 1  #n. of samples from a certain sequence
 
@@ -64,20 +64,24 @@ if __name__ == "__main__":
 
 
 
-# In[5]:
+# In[8]:
 
 
-def native_rigetti_packs_generator(target_qubit:int, num_layer):
+def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
     list_gates = []
     angles = np.linspace(0, np.pi, 100)
     
     for index in range(0,num_layer):
         omega, phi = np.random.uniform(0, 2*np.pi, size = 2)
         theta = np.random.choice(angles, p = np.sin(angles) / np.sum( np.sin(angles) ))
-
-        list_gates.extend( [RZ(phi, qubit = target_qubit),
-                            RY(theta, qubit = target_qubit),
-                            RZ(omega, qubit = target_qubit)] )
+        
+        draft_circuit = Program( [RZ(phi, qubit = target_qubit),
+                                  RY(theta, qubit = target_qubit),
+                                  RZ(omega, qubit = target_qubit)])
+        
+        list_gates.extend(qmachine.compiler.quil_to_native_quil(draft_circuit))
+    
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     return list_gates
 
 
@@ -93,7 +97,7 @@ def native_rigetti_packs_generator(target_qubit:int, num_layer):
 
 
 
-# In[11]:
+# In[9]:
 
 
 def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qubit, m, k_m, n_m):
@@ -104,7 +108,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
     response_matrix = np.zeros((k_m,n_m))
     
     for i_sequ in range(k_m):
-        gate_list = native_rigetti_packs_generator(target_qubit, m)
+        gate_list = native_rigetti_packs_generator(qmachine, target_qubit, m)
         prog = Program() #All qubits begin with |0> state
         
         for gate in gate_list:
@@ -116,9 +120,12 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
 #             gate_daggered = copy.deepcopy(gate)
 #             gate_daggered.params[0] *= -1 #make daggered rotation 
 #             prog += gate_daggered
-            
-        u_inverse = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=1)))
-        prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse))
+
+        u_inverse_definition = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=1)))
+        U_inverse = u_inverse_definition.get_constructor()
+        
+        prog += u_inverse_definition
+        prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(target_qubit)))
         
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
@@ -136,35 +143,35 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
         measured_outcome = result.readout_data.get('ro')
 
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
-    return response_matrix
+    return prog, response_matrix
 
 
-# In[10]:
+# In[7]:
 
 
 if __name__ == "__main__":
     get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability.ipynb --to python')
 
 
-# In[8]:
+# In[10]:
 
 
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
-    response = machine_response_rb_native_gate_conditional_single_qubit(qc, 0, m, k_m, n_m)
+    prog, response = machine_response_rb_native_gate_conditional_single_qubit(qc, 0, m, k_m, n_m)
 
 
-# In[ ]:
+# In[11]:
 
 
+print(prog)
 
 
-
-# In[ ]:
-
+# In[12]:
 
 
+get_ipython().run_line_magic('pinfo', 'qc.compiler.quil_to_native_quil')
 
 
 # In[ ]:
