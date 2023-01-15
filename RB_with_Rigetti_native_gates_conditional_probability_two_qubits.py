@@ -6,7 +6,7 @@
 # 
 # In this project we benchmark with those conditional probabilities
 
-# In[1]:
+# In[ ]:
 
 
 from pyquil import get_qc, Program
@@ -17,7 +17,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary
 from pyquil.quil import *
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -28,13 +28,13 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[3]:
+# In[ ]:
 
 
 from functions import *
 
 
-# In[4]:
+# In[ ]:
 
 
 if __name__ == "__main__":
@@ -42,11 +42,11 @@ if __name__ == "__main__":
 
 #     First step choose m and the K_m sequences of 
     m = 1
-    k_m = 5 #n. of diff sequences
-    n_m = 5  #n. of samples from a certain sequence
+    k_m = 2 #n. of diff sequences
+    n_m = 2  #n. of samples from a certain sequence
 
 
-# In[5]:
+# In[ ]:
 
 
 def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
@@ -58,7 +58,7 @@ def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer
     return list_gates
 
 
-# In[7]:
+# In[ ]:
 
 
 def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits:list, m:int, k_m, n_m):
@@ -84,9 +84,7 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
 #             prog += gate_daggered
         u_inverse_definition = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=2)))
         U_inverse = u_inverse_definition.get_constructor()
-        
-        prog += u_inverse_definition
-#         prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(*target_qubits)))
+        prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse_definition, U_inverse(*target_qubits)))
         
         #Do not let the quilc to alter the gates by optimization
 #         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
@@ -107,7 +105,7 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
     return response_matrix
 
 
-# In[8]:
+# In[ ]:
 
 
 if __name__ == "__main__":
@@ -116,7 +114,7 @@ if __name__ == "__main__":
     response = machine_response_rb_universal_two_qubits_conditional(qc, [0,1], m, k_m, n_m)
 
 
-# In[9]:
+# In[ ]:
 
 
 if __name__ == "__main__":

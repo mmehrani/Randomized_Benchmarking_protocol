@@ -19,7 +19,7 @@
 
 # In this project we benchmark with those conditional probabilities
 
-# In[1]:
+# In[ ]:
 
 
 from pyquil import get_qc, Program
@@ -30,7 +30,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary
 from pyquil.quil import *
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -41,13 +41,13 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[3]:
+# In[ ]:
 
 
 from functions import *
 
 
-# In[4]:
+# In[ ]:
 
 
 if __name__ == "__main__":
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
 
 
-# In[5]:
+# In[ ]:
 
 
 def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
@@ -99,7 +99,7 @@ def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
 
 
 
-# In[9]:
+# In[ ]:
 
 
 def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qubit, m, k_m, n_m):
@@ -128,9 +128,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
 
         u_inverse_definition = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=1)))
         U_inverse = u_inverse_definition.get_constructor()
-        
-        prog += u_inverse_definition
-#         prog += qmachine.compiler.quil_to_native_quil(Program(U_inverse(*target_qubit)))
+        prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse_definition, U_inverse(target_qubit)))
         
         #Do not let the quilc to alter the gates by optimization
         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
@@ -151,20 +149,20 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
     return response_matrix
 
 
-# In[7]:
-
-
-if __name__ == "__main__":
-    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability.ipynb --to python')
-
-
-# In[8]:
+# In[ ]:
 
 
 if __name__ == "__main__":
 #     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
     qc = get_qc("9q-square-noisy-qvm")
     response = machine_response_rb_native_gate_conditional_single_qubit(qc, [0], m, k_m, n_m)
+
+
+# In[ ]:
+
+
+if __name__ == "__main__":
+    get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability.ipynb --to python')
 
 
 # In[ ]:
