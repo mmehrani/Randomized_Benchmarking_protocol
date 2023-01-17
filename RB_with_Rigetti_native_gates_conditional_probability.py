@@ -19,7 +19,7 @@
 
 # In this project we benchmark with those conditional probabilities
 
-# In[ ]:
+# In[1]:
 
 
 from pyquil import get_qc, Program
@@ -30,7 +30,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary
 from pyquil.quil import *
 
 
-# In[ ]:
+# In[2]:
 
 
 import numpy as np
@@ -41,17 +41,17 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[ ]:
+# In[3]:
 
 
 from functions import *
 
 
-# In[ ]:
+# In[4]:
 
 
 if __name__ == "__main__":
-    target_qubit = [0]
+    target_qubit = [5]
     num_qubits = len(target_qubit)
 
 #     First step choose m and the K_m sequences of 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
 
 
-# In[ ]:
+# In[5]:
 
 
 def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
@@ -99,7 +99,7 @@ def native_rigetti_packs_generator(qmachine, target_qubit:int, num_layer:int):
 
 
 
-# In[ ]:
+# In[6]:
 
 
 def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qubit, m, k_m, n_m):
@@ -137,7 +137,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
         #Measurments
         ro = prog.declare('ro', 'BIT', 1)
         for q in range(1):
-            prog += MEASURE(q, ro[q])
+            prog += MEASURE(target_qubit, ro[q])
         prog = prog.wrap_in_numshots_loop(n_m)
 
         #Run the program
@@ -149,7 +149,7 @@ def machine_response_rb_native_gate_conditional_single_qubit(qmachine, target_qu
     return response_matrix
 
 
-# In[ ]:
+# In[7]:
 
 
 if __name__ == "__main__":
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     response = machine_response_rb_native_gate_conditional_single_qubit(qc, [0], m, k_m, n_m)
 
 
-# In[ ]:
+# In[8]:
 
 
 if __name__ == "__main__":

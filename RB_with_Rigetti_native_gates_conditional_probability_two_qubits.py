@@ -6,18 +6,18 @@
 # 
 # In this project we benchmark with those conditional probabilities
 
-# In[ ]:
+# In[14]:
 
 
 from pyquil import get_qc, Program
 from pyquil.gates import *
 from pyquil.api import local_forest_runtime
 from pyquil.quilbase import Declare
-from pyquil.simulation.tools import lifted_gate, program_unitary
+from pyquil.simulation.tools import lifted_gate, program_unitary, permutation_arbitrary
 from pyquil.quil import *
 
 
-# In[ ]:
+# In[2]:
 
 
 import numpy as np
@@ -28,13 +28,13 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[ ]:
+# In[3]:
 
 
 from functions import *
 
 
-# In[ ]:
+# In[4]:
 
 
 if __name__ == "__main__":
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     n_m = 2  #n. of samples from a certain sequence
 
 
-# In[ ]:
+# In[9]:
 
 
 def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
@@ -58,7 +58,7 @@ def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer
     return list_gates
 
 
-# In[ ]:
+# In[10]:
 
 
 def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits:list, m:int, k_m, n_m):
@@ -87,13 +87,13 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
         prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse_definition, U_inverse(*target_qubits)))
         
         #Do not let the quilc to alter the gates by optimization
-#         prog = Program('PRAGMA PRESERVE_BLOCK') + prog
-#         prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        prog = Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
         
         #Measurments
         ro = prog.declare('ro', 'BIT', num_qubits)
         for q in range(num_qubits):
-            prog += MEASURE(q, ro[q])
+            prog += MEASURE(target_qubits[q], ro[q])
         prog = prog.wrap_in_numshots_loop(n_m)
 
         #Run the program
@@ -105,7 +105,7 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
     return response_matrix
 
 
-# In[ ]:
+# In[12]:
 
 
 if __name__ == "__main__":
@@ -114,20 +114,20 @@ if __name__ == "__main__":
     response = machine_response_rb_universal_two_qubits_conditional(qc, [0,1], m, k_m, n_m)
 
 
-# In[ ]:
+# In[8]:
 
 
 if __name__ == "__main__":
     get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
 
 
-# In[ ]:
+# In[18]:
 
 
 
 
 
-# In[ ]:
+# In[8]:
 
 
 
