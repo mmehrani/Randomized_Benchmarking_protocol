@@ -6,7 +6,7 @@
 # 
 # In this project we benchmark with those conditional probabilities
 
-# In[14]:
+# In[13]:
 
 
 from pyquil import get_qc, Program
@@ -17,7 +17,7 @@ from pyquil.simulation.tools import lifted_gate, program_unitary, permutation_ar
 from pyquil.quil import *
 
 
-# In[2]:
+# In[14]:
 
 
 import numpy as np
@@ -28,13 +28,13 @@ import copy
 from tqdm import tqdm_notebook as tqdm
 
 
-# In[3]:
+# In[15]:
 
 
 from functions import *
 
 
-# In[4]:
+# In[17]:
 
 
 if __name__ == "__main__":
@@ -42,11 +42,11 @@ if __name__ == "__main__":
 
 #     First step choose m and the K_m sequences of 
     m = 1
-    k_m = 2 #n. of diff sequences
-    n_m = 2  #n. of samples from a certain sequence
+    k_m = 1 #n. of diff sequences
+    n_m = 1  #n. of samples from a certain sequence
 
 
-# In[9]:
+# In[18]:
 
 
 def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
@@ -58,7 +58,7 @@ def universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer
     return list_gates
 
 
-# In[10]:
+# In[19]:
 
 
 def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits:list, m:int, k_m, n_m):
@@ -77,11 +77,6 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
             prog += gate
         
         #Come back to our initial state
-#         for gate in reversed(gate_list):
-# #             prog += copy.deepcopy(gate).dagger() #dagger has replacing operations
-#             gate_daggered = copy.deepcopy(gate)
-#             gate_daggered.params[0] *= -1 #make daggered rotation 
-#             prog += gate_daggered
         u_inverse_definition = DefGate('U_inverse', np.linalg.inv(program_unitary(prog, n_qubits=2)))
         U_inverse = u_inverse_definition.get_constructor()
         prog += qmachine.compiler.quil_to_native_quil(Program(u_inverse_definition, U_inverse(*target_qubits)))
@@ -102,16 +97,16 @@ def machine_response_rb_universal_two_qubits_conditional(qmachine, target_qubits
         measured_outcome = result.readout_data.get('ro')
 
         response_matrix[i_sequ,:] = 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
-    return response_matrix
+    return prog, response_matrix
 
 
-# In[12]:
+# In[27]:
 
 
 if __name__ == "__main__":
-#     qc = get_qc( str(num_qubits) + 'q-qvm')  # You can make any 'nq-qvm'
-    qc = get_qc("9q-square-noisy-qvm")
-    response = machine_response_rb_universal_two_qubits_conditional(qc, [0,1], m, k_m, n_m)
+    qc = get_qc( str(2) + 'q-qvm')  # You can make any 'nq-qvm'
+#     qc = get_qc("9q-square-noisy-qvm")
+    prog, response = machine_response_rb_universal_two_qubits_conditional(qc, [0,1], m, k_m, n_m)
 
 
 # In[8]:
@@ -121,16 +116,25 @@ if __name__ == "__main__":
     get_ipython().system('jupyter nbconvert RB_with_Rigetti_native_gates_conditional_probability_two_qubits.ipynb --to python')
 
 
-# In[18]:
+# In[29]:
 
 
+instructions = [ins for ins in prog.instructions if isinstance(ins, Gate)]
+u = program_unitary( Program(instructions), n_qubits=2)
+u_inv = np.linalg.inv(u)
+u
 
 
-
-# In[8]:
-
+# In[23]:
 
 
+np.dot(u, u_inv)
+
+
+# In[25]:
+
+
+print(prog)
 
 
 # In[ ]:

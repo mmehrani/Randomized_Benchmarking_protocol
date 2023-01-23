@@ -71,11 +71,17 @@ def qreal_machine(given_program):
 def daggered_gate(gate):
     if gate.name in ['CZ','CNOT','H'] :
         return gate
+    elif gate.name == 'XY':
+        angle = gate.params[0]
+        return XY(angle = - angle,  q1= gate.qubits[0].index, q2= gate.qubits[1].index)
     elif gate.name == 'S':
         return PHASE(- np.pi/2, gate.qubits[0].index)
     elif gate.name == 'RX':
         angle = gate.params[0]
         return RX( - angle, qubit = gate.qubits[0].index)
+    elif gate.name == 'RY':
+        angle = gate.params[0]
+        return RY( - angle, qubit = gate.qubits[0].index)
     elif gate.name == 'RZ':
         angle = gate.params[0]
         return RZ( - angle, qubit = gate.qubits[0].index)
