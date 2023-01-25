@@ -10,6 +10,7 @@ import numpy as np
 from pyquil import get_qc, Program
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+from datetime import datetime
 
 from pyquil.quil import *
 from pyquil.gates import *
@@ -173,18 +174,19 @@ def give_random_two_qubit_circuit(qubits):
 
 def extrapolate_decay_func(layers_arr, avg_fdlty_arr):
     try:
-        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr)
+        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr, bounds=([0,0,0], [1., 1., 1.]))
     except:
-        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr, bounds=([0,0,-10], [1., 10., 0.]))
+        popt, pcov = curve_fit(decay_func, layers_arr, avg_fdlty_arr, bounds=([0,0,0], [1., 1., 1.]))
     return popt, pcov
 
 def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwargs):
-    fig = plt.figure()
-    plt.close(fig)
     
-    ax = fig.add_subplot()
+    if 'axes' in kwargs:
+        axes = kwargs.get('axes')
+    else:
+        fig = plt.figure()
+        axes = fig.add_subplot()
 
-    axes = kwargs.get('axes', ax)
     popt, pcov = extrapolate_decay_func(layers_arr, avg_fdlty_arr)
     
     axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o', color = 'k')
@@ -198,6 +200,115 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwa
     plt.ylabel('Average of Fidelity', fontsize=16)
     # plt.title('RB' + title)
 
-    plt.legend()
+    axes.legend()
     # plt.close(fig)
     # fig.savefig('RB_' + title + '.png')
+    
+    
+def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
+    list_gates = []
+    for index in range(num_layer):
+        draft_circuit = give_random_two_qubit_circuit(target_qubits)
+        list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
+    return list_gates
+
+def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
+    try:
+        temp = iter(target_qubit)
+        if len(target_qubit) == 1:
+            target_qubit = target_qubit[0]
+        else:
+            raise ValueError('target qubit should be only one index')
+    except:
+        pass
+    
+    list_gates = []
+    angles = np.linspace(0, np.pi, 100)
+    
+    for index in range(0,num_layer):
+        omega, phi = np.random.uniform(0, 2*np.pi, size = 2)
+        theta = np.random.choice(angles, p = np.sin(angles) / np.sum( np.sin(angles) ))
+        
+        draft_circuit = Program( [RZ(phi, qubit = target_qubit),
+                                  RY(theta, qubit = target_qubit),
+                                  RZ(omega, qubit = target_qubit)])
+        
+        list_gates.extend(qmachine.compiler.quil_to_native_quil(draft_circuit))
+    
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
+    return list_gates
+
+def used_qubits_index(gates_sequence):
+    qubits = np.array([np.array(gate.qubits) for gate in gates_sequence])
+    qubits = np.array([ ele.index for sub_arr in qubits for ele in sub_arr]) #some gates might have multiple indices
+    qubits_indices = np.unique(qubits)
+    qubits_indices.sort()
+    return [ int(x) for x in qubits_indices ]
+
+def convert_measured_to_response_matrix(measured_outcome):
+    return 1 - np.bool_(np.sum(measured_outcome, axis = 1)) # 1 if it is equal to n_zero state
+
+def run_bench_experiment(qmachine, program, number_of_shots):
+    
+    program = program.wrap_in_numshots_loop(number_of_shots)
+    
+    #Run the program
+    executable = qmachine.compile(program)
+    result = qmachine.run(executable)
+    measured_outcome = result.readout_data.get('ro')
+    return measured_outcome
+
+def get_inverse_circuit(qmachine, gates_sequence):
+    """
+    :params gates_sequence: iterable sequence of circuit gates.
+    :return: numpy array of gates constructing inverse circuit of the input 
+    """
+    target_qubits = used_qubits_index(gates_sequence)
+    n_qubits = len(target_qubits)
+    
+    prog = Program()
+    for gate in reversed(gates_sequence):
+        prog += daggered_gate(gate)
+    prog_daggered_native = qmachine.compiler.quil_to_native_quil(prog)
+    instructions = prog_daggered_native.instructions
+    inverting_gates_list = [ ins for ins in instructions if isinstance(ins, Gate)]
+    return np.array(inverting_gates_list)
+
+def generate_experiments(qmachine, target_qubits:list, circuit_gen_func, layers_num:int, exp_num:int):
+    n_qubits = len(target_qubits)
+    return np.array([circuit_gen_func(qmachine, target_qubits, layers_num) for i in range(exp_num)])
+
+def find_machine_response(qmachine, rb_experiments, number_of_shots):
+    """
+    It samples and record the accept or reject of the machine with given gate sequences
+    :return: response_matrix including accepts and rejects in columns
+    """
+    target_qubits = used_qubits_index(rb_experiments[0])
+    n_qubits = len(target_qubits)
+    sequ_num = len(rb_experiments)
+    response_matrix = np.zeros((sequ_num, number_of_shots))
+
+    for i_sequ, sequ in enumerate(rb_experiments):
+        prog = Program() #All qubits begin with |0> state
+        for gate in sequ:
+            prog += gate
+        
+        #Do not let the quilc to alter the gates by optimization
+        prog = Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        
+        #Measurments
+        ro = prog.declare('ro', 'BIT', n_qubits)
+        for ind, qubit_ind in enumerate(target_qubits):
+            prog += MEASURE(qubit_ind, ro[ind])
+            
+        response = convert_measured_to_response_matrix( run_bench_experiment(qmachine, prog, number_of_shots) )
+        response_matrix[i_sequ,:] = np.copy(response)
+    return response_matrix
+
+
+
+
