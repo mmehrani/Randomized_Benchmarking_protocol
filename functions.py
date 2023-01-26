@@ -291,7 +291,7 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
     sequ_num = len(rb_experiments)
     response_matrix = np.zeros((sequ_num, number_of_shots))
 
-    for i_sequ, sequ in enumerate(rb_experiments):
+    for i_sequ, sequ in enumerate(tqdm(rb_experiments)):
         prog = Program() #All qubits begin with |0> state
         for gate in sequ:
             prog += gate
