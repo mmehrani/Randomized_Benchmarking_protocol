@@ -136,7 +136,12 @@ def g_gate(control, target):
                    CPHASE10(-np.pi/2, control=control, target=target) )
 
 def arbitary_single_qubit_circuit(theta, phi, si, qubit):
-    return Program( RZ(si, qubit = qubit), RY(phi, qubit = qubit), RZ(theta, qubit = qubit) )
+    draft_circuit = Program( [RZ(si, qubit = qubit),
+                              RX(np.pi/2, qubit = qubit),
+                              RZ(phi, qubit = qubit),
+                              RX(-np.pi/2, qubit = qubit),
+                              RZ(theta, qubit = qubit)])
+    return draft_circuit
 
 def r_theta_phi_rotation(theta, phi, qubit):
     return arbitary_single_qubit_circuit( - phi/2, theta, phi/2, qubit)
@@ -232,13 +237,16 @@ def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_laye
         omega, phi = np.random.uniform(0, 2*np.pi, size = 2)
         theta = np.random.choice(angles, p = np.sin(angles) / np.sum( np.sin(angles) ))
         
-        draft_circuit = Program( [RZ(phi, qubit = target_qubit),
-                                  RY(theta, qubit = target_qubit),
-                                  RZ(omega, qubit = target_qubit)])
+        # draft_circuit = Program( [RZ(phi, qubit = target_qubit),
+        #                           RX(np.pi/2, qubit = target_qubit),
+        #                           RZ(theta, qubit = target_qubit),
+        #                           RX(-np.pi/2, qubit = target_qubit),
+        #                           RZ(omega, qubit = target_qubit)])
         
-        list_gates.extend(qmachine.compiler.quil_to_native_quil(draft_circuit))
+        list_gates.extend( arbitary_single_qubit_circuit(omega, theta, phi, target_qubit) )
+        # list_gates.extend(qmachine.compiler.quil_to_native_quil(draft_circuit))
     
-    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    # list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
     return list_gates
 
