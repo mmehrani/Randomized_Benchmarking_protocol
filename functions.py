@@ -11,6 +11,7 @@ from pyquil import get_qc, Program
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from datetime import datetime
+from tqdm import tqdm_notebook as tqdm
 
 from pyquil.quil import *
 from pyquil.gates import *
