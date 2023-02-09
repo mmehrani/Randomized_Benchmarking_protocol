@@ -288,7 +288,11 @@ def get_inverse_circuit(qmachine, gates_sequence):
 
 def generate_experiments(qmachine, target_qubits:list, circuit_gen_func, layers_num:int, exp_num:int):
     n_qubits = len(target_qubits)
-    return np.array([circuit_gen_func(qmachine, target_qubits, layers_num) for i in range(exp_num)])
+    exp_list = []
+    for i in tqdm(range(exp_num), desc = 'Exp. generation'):
+        exp_list.append(circuit_gen_func(qmachine, target_qubits, layers_num))
+    # np.array([circuit_gen_func(qmachine, target_qubits, layers_num) for i in range(exp_num)])
+    return exp_list
 
 def find_machine_response(qmachine, rb_experiments, number_of_shots):
     """
