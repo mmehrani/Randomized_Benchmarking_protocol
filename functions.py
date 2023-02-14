@@ -15,7 +15,6 @@ from tqdm import tqdm_notebook as tqdm
 
 from pyquil.quil import *
 from pyquil.gates import *
-# calculate the average fidelity for a given m
 
 def calculate_lower_bound(p_jm):
     if p_jm == 1:
@@ -131,9 +130,15 @@ def plot_bloch_sphere(bloch_vectors):
         bloch_vectors[:,0], bloch_vectors[:,1], bloch_vectors[:, 2], c='#e29d9e', alpha=0.3
     )
 
+# def g_gate(control, target):
+#     return Program( CPHASE01(-np.pi/2, control=control, target=target),
+#                    CPHASE10(-np.pi/2, control=control, target=target) )
+
 def g_gate(control, target):
-    return Program( CPHASE01(-np.pi/2, control=control, target=target),
-                   CPHASE10(-np.pi/2, control=control, target=target) )
+    return Program( RZ(-3*np.pi/2, qubit = control), RZ(-3*np.pi/2, qubit = target),
+                    CZ(control = target, target=control),
+                    RZ(-np.pi, qubit = control), RZ(-np.pi, qubit = target) )
+
 
 def arbitary_single_qubit_circuit(theta, phi, si, qubit):
     draft_circuit = Program( [RZ(si, qubit = qubit),
@@ -204,11 +209,8 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwa
 
     plt.xlabel('Depth', fontsize=18)
     plt.ylabel('Average of Fidelity', fontsize=16)
-    # plt.title('RB' + title)
 
     axes.legend()
-    # plt.close(fig)
-    # fig.savefig('RB_' + title + '.png')
     
     
 def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
@@ -244,9 +246,7 @@ def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_laye
         #                           RZ(omega, qubit = target_qubit)])
         
         list_gates.extend( arbitary_single_qubit_circuit(omega, theta, phi, target_qubit) )
-        # list_gates.extend(qmachine.compiler.quil_to_native_quil(draft_circuit))
     
-    # list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
     return list_gates
 
@@ -289,7 +289,7 @@ def get_inverse_circuit(qmachine, gates_sequence):
 def generate_experiments(qmachine, target_qubits:list, circuit_gen_func, layers_num:int, exp_num:int):
     n_qubits = len(target_qubits)
     exp_list = []
-    for i in tqdm(range(exp_num), desc = 'Exp. generation'):
+    for i in tqdm(range(exp_num), desc = 'exp. generation'):
         exp_list.append(circuit_gen_func(qmachine, target_qubits, layers_num))
     # np.array([circuit_gen_func(qmachine, target_qubits, layers_num) for i in range(exp_num)])
     return exp_list
@@ -304,7 +304,7 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
     sequ_num = len(rb_experiments)
     response_matrix = np.zeros((sequ_num, number_of_shots))
 
-    for i_sequ, sequ in enumerate(tqdm(rb_experiments)):
+    for i_sequ, sequ in enumerate(tqdm(rb_experiments, desc = 'Examing the seq.')):
         prog = Program() #All qubits begin with |0> state
         for gate in sequ:
             prog += gate
