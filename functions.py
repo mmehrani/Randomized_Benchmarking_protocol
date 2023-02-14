@@ -13,13 +13,52 @@ from scipy.optimize import curve_fit
 from datetime import datetime
 from tqdm import tqdm_notebook as tqdm
 import _pickle as cPickle
+import os
 
 from pyquil.quil import *
 from pyquil.gates import *
 
 
+def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
+    list_gates = []
+    for index in range(num_layer):
+        draft_circuit = give_random_two_qubit_circuit(target_qubits)
+        list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
+    return list_gates
+
+def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
+    try:
+        temp = iter(target_qubit)
+        if len(target_qubit) == 1:
+            target_qubit = target_qubit[0]
+        else:
+            raise ValueError('target qubit should be only one index')
+    except:
+        pass
+    
+    list_gates = []
+    angles = np.linspace(0, np.pi, 100)
+    
+    for index in range(0,num_layer):
+        omega, phi = np.random.uniform(0, 2*np.pi, size = 2)
+        theta = np.random.choice(angles, p = np.sin(angles) / np.sum( np.sin(angles) ))
+        
+        # draft_circuit = Program( [RZ(phi, qubit = target_qubit),
+        #                           RX(np.pi/2, qubit = target_qubit),
+        #                           RZ(theta, qubit = target_qubit),
+        #                           RX(-np.pi/2, qubit = target_qubit),
+        #                           RZ(omega, qubit = target_qubit)])
+        
+        list_gates.extend( arbitary_single_qubit_circuit(omega, theta, phi, target_qubit) )
+    
+    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
+    return list_gates
+
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
                            'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator}
+
 
 def calculate_lower_bound(p_jm):
     if p_jm == 1:
@@ -217,43 +256,6 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwa
 
     axes.legend()
     
-    
-def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
-    list_gates = []
-    for index in range(num_layer):
-        draft_circuit = give_random_two_qubit_circuit(target_qubits)
-        list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
-    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
-    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
-    return list_gates
-
-def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
-    try:
-        temp = iter(target_qubit)
-        if len(target_qubit) == 1:
-            target_qubit = target_qubit[0]
-        else:
-            raise ValueError('target qubit should be only one index')
-    except:
-        pass
-    
-    list_gates = []
-    angles = np.linspace(0, np.pi, 100)
-    
-    for index in range(0,num_layer):
-        omega, phi = np.random.uniform(0, 2*np.pi, size = 2)
-        theta = np.random.choice(angles, p = np.sin(angles) / np.sum( np.sin(angles) ))
-        
-        # draft_circuit = Program( [RZ(phi, qubit = target_qubit),
-        #                           RX(np.pi/2, qubit = target_qubit),
-        #                           RZ(theta, qubit = target_qubit),
-        #                           RX(-np.pi/2, qubit = target_qubit),
-        #                           RZ(omega, qubit = target_qubit)])
-        
-        list_gates.extend( arbitary_single_qubit_circuit(omega, theta, phi, target_qubit) )
-    
-    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
-    return list_gates
 
 def used_qubits_index(gates_sequence):
     qubits = np.array([np.array(gate.qubits) for gate in gates_sequence])
@@ -295,7 +297,7 @@ def get_inverse_circuit(qmachine, gates_sequence):
 def catch_experiments(qmachine, target_qubits:list, protocol_name:str, layers_num:int, exp_num:int):
     
     file_path = os.path.join( os.getcwd(), 'experiments_warehouse', protocol_name,
-                        target_qubits, 'L{}_K{}.pickle'.format(layers_num, exp_num) )
+                        str(target_qubits), 'L{}_K{}.pickle'.format(layers_num, exp_num) )
     
     if os.path.isfile(file_path): #if such exp exists
         with open(file_path, "rb") as input_file:
