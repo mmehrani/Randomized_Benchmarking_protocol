@@ -12,9 +12,14 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from datetime import datetime
 from tqdm import tqdm_notebook as tqdm
+import _pickle as cPickle
 
 from pyquil.quil import *
 from pyquil.gates import *
+
+
+bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
+                           'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator}
 
 def calculate_lower_bound(p_jm):
     if p_jm == 1:
@@ -286,12 +291,27 @@ def get_inverse_circuit(qmachine, gates_sequence):
     inverting_gates_list = [ ins for ins in instructions if isinstance(ins, Gate)]
     return np.array(inverting_gates_list)
 
+
+def catch_experiments(qmachine, target_qubits:list, protocol_name:str, layers_num:int, exp_num:int):
+    
+    file_path = os.path.join( os.getcwd(), 'experiments_warehouse', protocol_name,
+                        target_qubits, 'L{}_K{}.pickle'.format(layers_num, exp_num) )
+    
+    if os.path.isfile(file_path): #if such exp exists
+        with open(file_path, "rb") as input_file:
+            exps = cPickle.load(input_file)
+    else: #if it does not exists
+        circuit_gen_func = bench_protocol_func_dict[protocol_name]
+        exps = generate_experiments(qmachine, target_qubits, circuit_gen_func, layers_num, exp_num)
+    
+    return exps
+
 def generate_experiments(qmachine, target_qubits:list, circuit_gen_func, layers_num:int, exp_num:int):
     n_qubits = len(target_qubits)
     exp_list = []
     for i in tqdm(range(exp_num), desc = 'exp. generation'):
         exp_list.append(circuit_gen_func(qmachine, target_qubits, layers_num))
-    # np.array([circuit_gen_func(qmachine, target_qubits, layers_num) for i in range(exp_num)])
+    
     return exp_list
 
 def find_machine_response(qmachine, rb_experiments, number_of_shots):
