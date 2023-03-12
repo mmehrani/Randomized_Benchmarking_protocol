@@ -15,6 +15,8 @@ from tqdm import tqdm_notebook as tqdm
 import _pickle as cPickle
 import os
 
+from pyquil.api import get_qc, BenchmarkConnection
+from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
 from pyquil.quil import *
 from pyquil.gates import *
 
@@ -55,6 +57,31 @@ def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_laye
     
     list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
     return list_gates
+
+def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
+    try:
+        temp = iter(target_qubit)
+        if len(target_qubit) == 1:
+            target_qubit = target_qubit[0]
+        else:
+            raise ValueError('target qubit should be only one index')
+    except:
+        pass
+    
+    list_gates = []
+    
+    bm = BenchmarkConnection()
+    
+    sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
+    for prog in sequences:
+        diff_length =  5 - len(prog)
+        if diff_length == 0:
+            pass
+        else:
+            for num in range(diff_length):
+                prog += I(target_qubit)
+    
+    return sequences
 
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
                            'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator}
