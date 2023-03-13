@@ -59,14 +59,14 @@ def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_laye
     return list_gates
 
 def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
-    try:
-        temp = iter(target_qubit)
-        if len(target_qubit) == 1:
-            target_qubit = target_qubit[0]
-        else:
-            raise ValueError('target qubit should be only one index')
-    except:
-        pass
+    # try:
+    #     temp = iter(target_qubit)
+    #     if len(target_qubit) == 1:
+    #         target_qubit = target_qubit[0]
+    #     else:
+    #         raise ValueError('target qubit should be only one index')
+    # except:
+    #     pass
     
     bm = BenchmarkConnection()
     
@@ -77,9 +77,13 @@ def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer:in
             pass
         else:
             for num in range(diff_length):
-                prog += I(target_qubit)
+                prog += I(target_qubit[0])
     
-    return sequences
+    gates_list = []
+    for prog in sequences:
+        gates_list.extend(prog.instructions)
+    
+    return gates_list
 
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
                            'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator,
