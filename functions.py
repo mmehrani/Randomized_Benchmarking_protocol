@@ -85,9 +85,21 @@ def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer:in
     
     return gates_list
 
+def two_design_single_qubit_packs_generator_non_uniform(qmachine, target_qubit, num_layer:int):
+    bm = BenchmarkConnection()
+    
+    sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
+    gates_list = []
+    
+    for prog in sequences:
+        gates_list.extend(prog.instructions)
+    
+    return gates_list
+
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
                            'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator,
-                           'standard_rb_single_qubit':two_design_single_qubit_packs_generator}
+                           'standard_rb_single_qubit':two_design_single_qubit_packs_generator,
+                           'standard_rb_non_uniform_single_qubit':two_design_single_qubit_packs_generator_non_uniform}
 
 
 def calculate_lower_bound(p_jm):
