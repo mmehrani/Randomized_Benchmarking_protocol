@@ -286,8 +286,10 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwa
 
     popt, pcov = extrapolate_decay_func(layers_arr, avg_fdlty_arr)
     
-    axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o', color = 'k')
-    
+    # axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o', color = 'k')
+    err = axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o')
+    err[-1][0].set_linestyle('--')
+    err[-1][0].set_alpha(0.5)
     between_layers = np.arange(layers_arr.min(),layers_arr.max()+1,1).astype('int')
     axes.plot(between_layers, decay_func(between_layers, *popt),
               label =  label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt,2)))
