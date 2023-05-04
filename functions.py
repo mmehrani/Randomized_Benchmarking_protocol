@@ -14,6 +14,7 @@ from datetime import datetime
 from tqdm import tqdm_notebook as tqdm
 import _pickle as cPickle
 import os
+import itertools
 
 from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
@@ -96,10 +97,49 @@ def two_design_single_qubit_packs_generator_non_uniform(qmachine, target_qubit, 
     
     return gates_list
 
+def two_design_two_qubits_packs_generator(qmachine, target_qubit, num_layer:int):
+    # try:
+    #     temp = iter(target_qubit)
+    #     if len(target_qubit) == 1:
+    #         target_qubit = target_qubit[0]
+    #     else:
+    #         raise ValueError('target qubit should be only one index')
+    # except:
+    #     pass
+    
+    bm = BenchmarkConnection()
+    
+    sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
+    for prog in sequences:
+        diff_length =  55 - len(prog)
+        if diff_length == 0:
+            pass
+        else:
+            for num in range(diff_length):
+                prog += I(target_qubit[0])
+    
+    gates_list = []
+    for prog in sequences:
+        gates_list.extend(prog.instructions)
+    
+    return gates_list
+
+def two_design_two_qubits_packs_generator_non_uniform(qmachine, target_qubits, num_layer:int):
+    
+    bm = BenchmarkConnection()
+    
+    sequences = generate_rb_sequence(bm, qubits=target_qubits, depth=num_layer)
+    gates_list = []
+    for prog in sequences:
+        gates_list.extend(prog.instructions)
+    
+    return gates_list
+
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
                            'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator,
                            'standard_rb_single_qubit':two_design_single_qubit_packs_generator,
-                           'standard_rb_non_uniform_single_qubit':two_design_single_qubit_packs_generator_non_uniform}
+                           'standard_rb_non_uniform_single_qubit':two_design_single_qubit_packs_generator_non_uniform,
+                           'standard_rb_non_uniform_two_qubits':two_design_two_qubits_packs_generator_non_uniform}
 
 
 def calculate_lower_bound(p_jm):
@@ -278,6 +318,8 @@ def extrapolate_decay_func(layers_arr, avg_fdlty_arr):
 
 def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwargs):
     
+    fmt = kwargs.get('fmt','o')
+    
     if 'axes' in kwargs:
         axes = kwargs.get('axes')
     else:
@@ -287,12 +329,12 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label:str, *args, **kwa
     popt, pcov = extrapolate_decay_func(layers_arr, avg_fdlty_arr)
     
     # axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o', color = 'k')
-    err = axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = 'o')
+    err = axes.errorbar(layers_arr, avg_fdlty_arr, yerr = err_fdlty_arr, fmt = fmt, capsize = 4, capthick = 2)
     err[-1][0].set_linestyle('--')
     err[-1][0].set_alpha(0.5)
     between_layers = np.arange(layers_arr.min(),layers_arr.max()+1,1).astype('int')
-    axes.plot(between_layers, decay_func(between_layers, *popt),
-              label =  label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt,2)))
+    axes.plot(between_layers, decay_func(between_layers, *popt), color = err[0].get_color(),
+              label =  label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt,4)))
 
 
     plt.xlabel('Depth', fontsize=18)
@@ -399,7 +441,5 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
         response = convert_measured_to_response_matrix( run_bench_experiment(qmachine, prog, number_of_shots) )
         response_matrix[i_sequ,:] = np.copy(response)
     return response_matrix
-
-
 
 
