@@ -297,6 +297,18 @@ def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
                     r_theta_phi_rotation(3*np.pi/2, delta, qubit = qubits[1]), g_gate(qubits[0], qubits[1]))
     return prog
 
+# def give_random_two_qubit_circuit(qubits):
+#     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
+    
+#     angles_range = np.linspace(0,2*np.pi)
+#     alpha, beta, delta = np.random.choice(angles_range, p = normalized_abs_angle_dist(angles_range),
+#                                           size = 3)
+    
+#     prog = Program(a, b )
+#     prog += give_v_circuit(alpha, beta, delta, qubits = qubits)
+#     prog += Program(c, d )
+#     return prog
+
 def give_random_two_qubit_circuit(qubits):
     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
     
@@ -308,6 +320,7 @@ def give_random_two_qubit_circuit(qubits):
     prog += give_v_circuit(alpha, beta, delta, qubits = qubits)
     prog += Program(c, d )
     return prog
+
 
 def extrapolate_decay_func(layers_arr, avg_fdlty_arr):
     try:
