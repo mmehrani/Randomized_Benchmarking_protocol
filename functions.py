@@ -7,7 +7,6 @@ Created on Mon Dec  6 11:09:28 2021
 
 
 import numpy as np
-from pyquil import get_qc, Program
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from datetime import datetime
@@ -16,6 +15,7 @@ import _pickle as cPickle
 import os
 import itertools
 
+from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
 from pyquil.quil import *
@@ -266,24 +266,24 @@ def g_gate(control, target):
                     RZ(-np.pi, qubit = control), RZ(-np.pi, qubit = target) )
 
 
-def arbitary_single_qubit_circuit(theta, phi, si, qubit):
-    draft_circuit = Program( [RZ(si, qubit = qubit),
+def arbitary_single_qubit_circuit(phi, theta, omega, qubit):
+    draft_circuit = Program( [RZ(phi, qubit = qubit),
                               RX(np.pi/2, qubit = qubit),
-                              RZ(phi, qubit = qubit),
+                              RZ(theta, qubit = qubit),
                               RX(-np.pi/2, qubit = qubit),
-                              RZ(theta, qubit = qubit)])
+                              RZ(omega, qubit = qubit)])
     return draft_circuit
 
 def r_theta_phi_rotation(theta, phi, qubit):
     return arbitary_single_qubit_circuit( - phi/2, theta, phi/2, qubit)
 
 def give_random_single_qubit_gate(qubit):
-    theta, si = np.random.uniform(0,2*np.pi, size = 2)
+    phi, omega = np.random.uniform(0,2*np.pi, size = 2)
     
-    phi_range = np.linspace(0,np.pi)
-    p_phi = np.sin(phi_range) / np.sum(np.sin(phi_range))
-    phi = np.random.choice(phi_range, p = p_phi)
-    return arbitary_single_qubit_circuit(theta, phi, si, qubit = qubit)
+    theta_range = np.linspace(0,np.pi)
+    p_theta = np.sin(theta_range) / np.sum(np.sin(theta_range))
+    theta = np.random.choice(theta_range, p = p_theta)
+    return arbitary_single_qubit_circuit(phi, theta, omega, qubit = qubit)
 
 def normalized_abs_angle_dist(angle_range):
     dist = np.pi - np.abs( np.pi - angle_range )
@@ -291,23 +291,13 @@ def normalized_abs_angle_dist(angle_range):
     return dist
 
 def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
-    prog = Program(g_gate(qubits[0], qubits[1]),  r_theta_phi_rotation(alpha, 0, qubit =qubits[0]),
-                   r_theta_phi_rotation(3*np.pi/2,0, qubit =qubits[1]), g_gate(qubits[0], qubits[1]))
-    prog += Program( r_theta_phi_rotation(beta, np.pi/2, qubit = qubits[0]),
-                    r_theta_phi_rotation(3*np.pi/2, delta, qubit = qubits[1]), g_gate(qubits[0], qubits[1]))
+    prog = Program(CNOT(control=qubits[1], target=qubits[0]),
+                   RZ(angle = delta, qubit =qubits[0]),
+                   RY(beta, qubit =qubits[1]),
+                   CNOT(control=qubits[0], target=qubits[1]))
+    prog += Program(RY(angle= alpha, qubit = qubits[1]),
+                    CNOT(control=qubits[1], target=qubits[0]))
     return prog
-
-# def give_random_two_qubit_circuit(qubits):
-#     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
-    
-#     angles_range = np.linspace(0,2*np.pi)
-#     alpha, beta, delta = np.random.choice(angles_range, p = normalized_abs_angle_dist(angles_range),
-#                                           size = 3)
-    
-#     prog = Program(a, b )
-#     prog += give_v_circuit(alpha, beta, delta, qubits = qubits)
-#     prog += Program(c, d )
-#     return prog
 
 def give_random_two_qubit_circuit(qubits):
     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
