@@ -48,8 +48,6 @@ def generate_phi_four(phi_one, phi_two, phi_three):
                     3 * np.sin(phi_one + phi_three) - 3 * np.sin(phi_one - phi_two + phi_three) + \
                         3 * np.sin(phi_two + phi_three) -  np.sin(phi_one + phi_two + phi_three) )
     
-    # x_max = np.pi/4 + 1/8 * np.pi * np.cos(phi_one - phi_two) + \
-    #     1/8 * np.pi * np.cos(phi_one - phi_three) + 1/8 * np.pi * np.cos(phi_two - phi_three)
         
     x_max = (6 * (2 + np.cos(phi_one - phi_two) + np.cos(phi_one - phi_three) + np.cos(phi_two - phi_three))) / \
         (12 * np.pi + 6 * np.pi * np.cos(phi_one - phi_two) + 6 * np.pi * np.cos(phi_one - phi_three) +\
@@ -81,8 +79,16 @@ def generate_phi_four(phi_one, phi_two, phi_three):
     phi_four = answer['x'][0]
     return phi_four
 
-phi_one = generate_phi_one()
-# plt.hist([generate_phi_two(generate_phi_one()) for _ in range(10000)], bins = 100)
-# plt.hist([generate_phi_two(np.pi) for _ in range(10000)])
-# plt.hist([generate_phi_three(0,0) for _ in range(10000)])
-plt.hist([generate_phi_four(0,2*np.pi/3,4*np.pi/3) for _ in range(10000)])
+def generate_haar_random_eigenvalues_two_qubits():
+    phi_one = generate_phi_one()
+    phi_two = generate_phi_two(phi_one)
+    phi_three = generate_phi_three(phi_one, phi_two)
+    phi_four = generate_phi_four(phi_one, phi_two, phi_three)
+    return phi_one, phi_two, phi_three, phi_four
+
+if __name__ == '__main__':
+    phi_one = generate_phi_one()
+    # plt.hist([generate_phi_two(generate_phi_one()) for _ in range(10000)], bins = 100)
+    # plt.hist([generate_phi_two(np.pi) for _ in range(10000)])
+    # plt.hist([generate_phi_three(0,0) for _ in range(10000)])
+    plt.hist([generate_phi_four(0,2*np.pi/3,4*np.pi/3) for _ in range(10000)])

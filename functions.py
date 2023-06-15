@@ -15,6 +15,8 @@ import _pickle as cPickle
 import os
 import itertools
 
+from eigenvalues_distribution import generate_haar_random_eigenvalues_two_qubits
+
 from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
@@ -30,6 +32,7 @@ def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, nu
     list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
     return list_gates
+
 
 def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_layer:int):
     try:
@@ -301,10 +304,9 @@ def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
 
 def give_random_two_qubit_circuit(qubits):
     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
+    phi_one, phi_two, phi_three, phi_four = generate_haar_random_eigenvalues_two_qubits()
     
-    angles_range = np.linspace(0,2*np.pi)
-    alpha, beta, delta = np.random.choice(angles_range, p = normalized_abs_angle_dist(angles_range),
-                                          size = 3)
+    alpha, beta, delta = [(phi_one + phi_two)/2,(phi_two + phi_three)/2,(phi_one + phi_four)/2]
     
     prog = Program(a, b )
     prog += give_v_circuit(alpha, beta, delta, qubits = qubits)

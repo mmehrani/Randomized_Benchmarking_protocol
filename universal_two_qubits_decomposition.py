@@ -8,7 +8,7 @@ Created on Sun May 21 19:31:35 2023
 from scipy.stats import unitary_group
 import cmath
 import numpy as np
-from functions import give_v_circuit, arbitary_single_qubit_circuit
+from functions import give_v_circuit, arbitary_single_qubit_circuit, get_inverse_circuit
 
 from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
@@ -65,7 +65,9 @@ def get_ordered_eig(matrix):
     return values, vecs
 
 def find_phi_theta_omega(single_rot):
-    cos_theta_2 = abs(single_rot[0,0])
+    # single_rot = strip_global_factor(single_rot)
+    cos_theta_2 = np.round(abs(single_rot[0,0]), decimals=3)
+    # print(np.matmul(single_rot, single_rot.T.conj()))
     theta = 2*np.arccos(cos_theta_2)
     phi_plus_omega_2 = cmath.phase(single_rot[1,1])
     phi_minus_omega_2 = - cmath.phase(single_rot[1,0])
@@ -92,6 +94,8 @@ def get_program_of_single_unitary(single_qubit_unitary_matrix, target_qubit):
 def get_single_parts_of_tensor_prod(x_tensor_y):
     x = strip_global_factor(partial_trace_on_right(x_tensor_y))
     y = strip_global_factor(partial_trace_on_left(x_tensor_y))
+    print(x_tensor_y.dot(x_tensor_y.T.conj()),'\n')
+    # print(x.dot(x.T.conj()), y.dot(y.T.conj()))
     return x,y
 
 def get_matrix_of_single_member_two_design_two_qubits():
@@ -103,9 +107,21 @@ def get_matrix_of_single_member_two_design_two_qubits():
     return mat
 
 def two_design_two_qubits_packs_generator_uni(qmachine, target_qubits, num_layer:int):
-    mat = get_matrix_of_single_member_two_design_two_qubits()
-    program = get_corresponding_universal_circuit(mat, target_qubits)
-    return program
+    list_gates = []
+    total_mat = np.eye(4,4)
+    for index in range(num_layer):
+        mat = get_matrix_of_single_member_two_design_two_qubits()
+        total_mat = np.matmul(mat, total_mat)
+        draft_circuit = get_corresponding_universal_circuit(mat, target_qubits)
+        # list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
+        list_gates.extend( draft_circuit )
+    
+    inverse_mat = np.linalg.inv(total_mat)
+    inverse_circuit = get_corresponding_universal_circuit(inverse_mat, target_qubits)
+    list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    list_gates.extend( inverse_circuit )
+        
+    return list_gates
 
 
 def get_corresponding_universal_circuit(u_matrix, target_qubits):
@@ -146,4 +162,6 @@ if __name__ == '__main__':
     # pack_mat = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 5)
     # circuit = get_corresponding_universal_circuit(pack_mat, [0,1])
     mat = get_matrix_of_single_member_two_design_two_qubits()
-    program = get_corresponding_universal_circuit(mat, [0,1])
+    program = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 2)
+    
+    
