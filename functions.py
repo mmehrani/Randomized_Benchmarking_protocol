@@ -293,20 +293,33 @@ def normalized_abs_angle_dist(angle_range):
     dist /= np.sum(dist)
     return dist
 
+# def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
+    # prog = Program(CNOT(control=qubits[1], target=qubits[0]),
+    #                RZ(angle = delta, qubit =qubits[0]),
+    #                RY(beta, qubit =qubits[1]),
+    #                CNOT(control=qubits[0], target=qubits[1]))
+    # prog += Program(RY(angle= alpha, qubit = qubits[1]),
+    #                 CNOT(control=qubits[1], target=qubits[0]))
+
+    # return prog
+
 def give_v_circuit(alpha, beta, delta, qubits = [0,1]):
-    prog = Program(CNOT(control=qubits[1], target=qubits[0]),
-                   RZ(angle = delta, qubit =qubits[0]),
-                   RY(beta, qubit =qubits[1]),
-                   CNOT(control=qubits[0], target=qubits[1]))
-    prog += Program(RY(angle= alpha, qubit = qubits[1]),
-                    CNOT(control=qubits[1], target=qubits[0]))
+    prog = Program(RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(- np.pi/2, qubits[0]),
+                    CZ(control=qubits[1], target=qubits[0]),
+                    RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(- np.pi/2, qubits[0]), RZ(delta, qubits[0]),
+                    RX(np.pi/2, qubits[1]), RZ(np.pi/2 + beta, qubits[1]), RX(np.pi/2, qubits[1]),
+                    CZ(control=qubits[0], target=qubits[1]))
+    prog += Program(RZ(np.pi, qubits[1]), RX(np.pi/2, qubits[1]), RZ(np.pi/2 + alpha, qubits[1]), RX(-np.pi/2, qubits[1]),
+                    RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(- np.pi/2, qubits[0]),
+                    CZ(control=qubits[1], target=qubits[0]),
+                    RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(- np.pi/2, qubits[0]))
     return prog
 
 def give_random_two_qubit_circuit(qubits):
     a,b,c,d = [give_random_single_qubit_gate(qubit=qubit) for _ in range(2) for qubit in qubits]
     phi_one, phi_two, phi_three, phi_four = generate_haar_random_eigenvalues_two_qubits()
     
-    alpha, beta, delta = [(phi_one + phi_two)/2,(phi_two + phi_three)/2,(phi_one + phi_four)/2]
+    alpha, beta, delta = [(phi_one + phi_two)/2, (phi_one + phi_three)/2, (phi_two + phi_three)/2]
     
     prog = Program(a, b )
     prog += give_v_circuit(alpha, beta, delta, qubits = qubits)
