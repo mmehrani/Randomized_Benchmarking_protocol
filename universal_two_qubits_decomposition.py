@@ -6,6 +6,7 @@ Created on Sun May 21 19:31:35 2023
 """
 
 from scipy.stats import unitary_group
+import scipy.linalg as la
 import cmath
 import numpy as np
 from functions import give_v_circuit, arbitary_single_qubit_circuit, get_inverse_circuit
@@ -58,8 +59,14 @@ def strip_global_factor(matrix):
 
 
 def get_ordered_eig(matrix):
-    values, vecs = np.linalg.eig(matrix)
-    order = np.argsort([cmath.phase(x) for x in values])
+    # values, vecs = np.linalg.eig(matrix)
+    values, vecs = la.eig(matrix)
+    values_real = [np.round(z.real, 3) for z in values]
+    values_imag = [np.round(z.imag, 3) for z in values]
+    values_approx = [values_real[i] + 1j*values_imag[i] for i,_ in enumerate(values)]
+    phases = [cmath.phase(x) for x in values_approx]
+    
+    order = np.argsort(phases)
     values = values[order]
     vecs = np.transpose(vecs.transpose()[order])
     return values, vecs
@@ -68,6 +75,7 @@ def find_phi_theta_omega(single_rot):
     # single_rot = strip_global_factor(single_rot)
     cos_theta_2 = np.round(abs(single_rot[0,0]), decimals=3)
     # print(np.matmul(single_rot, single_rot.T.conj()))
+    print(cos_theta_2)
     theta = 2*np.arccos(cos_theta_2)
     phi_plus_omega_2 = cmath.phase(single_rot[1,1])
     phi_minus_omega_2 = - cmath.phase(single_rot[1,0])
@@ -94,7 +102,7 @@ def get_program_of_single_unitary(single_qubit_unitary_matrix, target_qubit):
 def get_single_parts_of_tensor_prod(x_tensor_y):
     x = strip_global_factor(partial_trace_on_right(x_tensor_y))
     y = strip_global_factor(partial_trace_on_left(x_tensor_y))
-    print(x_tensor_y.dot(x_tensor_y.T.conj()),'\n')
+    # print(x_tensor_y.dot(x_tensor_y.T.conj()),'\n')
     # print(x.dot(x.T.conj()), y.dot(y.T.conj()))
     return x,y
 
@@ -128,22 +136,40 @@ def get_corresponding_universal_circuit(u_matrix, target_qubits):
     u_matrix = strip_global_factor(u_matrix)
     u_matrix *= np.e**(-1j*np.pi/4)
     
+    # print(u_matrix.dot(u_matrix.T.conj()))
+    
     u_magic_matrix = matrix_in_magic_basis(u_matrix)
     u_u_T = np.dot(u_magic_matrix, u_magic_matrix.transpose())
     u_u_T_eigen_values, u_u_T_eigen_vectors = get_ordered_eig(u_u_T)
     
-    v_circuit = get_corresponding_entangling_part(u_magic_matrix, target_qubits)
-    v_circuit_zero_one = get_corresponding_entangling_part(u_magic_matrix, [0,1]) #program_unitary works with zero and one only bad luck!
+    
+    # v_circuit = get_corresponding_entangling_part(u_magic_matrix, target_qubits)
+    # v_circuit_zero_one = get_corresponding_entangling_part(u_magic_matrix, [0,1]) #program_unitary works with zero and one only bad luck!
+    eigen_values_phases = [cmath.phase(x) for x in u_u_T_eigen_values]
+    alpha, beta, delta = np.array([eigen_values_phases[0] + eigen_values_phases[1],
+                                   eigen_values_phases[0] + eigen_values_phases[2],
+                                   eigen_values_phases[1] + eigen_values_phases[2] ]) / 2
+    v_circuit = give_v_circuit(alpha, beta, delta, qubits = target_qubits)
+    v_circuit_zero_one = give_v_circuit(alpha, beta, delta, qubits = [0,1])
+    
     v_matrix = program_unitary(v_circuit_zero_one, n_qubits=2)
     v_magic_matrix = matrix_in_magic_basis(v_matrix)
+    
+    # print(np.linalg.det(v_magic_matrix))
+    
     v_v_T = np.dot(v_magic_matrix, v_magic_matrix.transpose())
     v_v_T_eigen_values, v_v_T_eigen_vectors = get_ordered_eig(v_v_T)
     
+    
+    print(phase_distance(v_v_T_eigen_values), phase_distance(u_u_T_eigen_values))
+    
     k_matrix = np.copy(v_v_T_eigen_vectors.transpose()) # transpose needed to be consistent with the paper
     l_matrix = np.copy(u_u_T_eigen_vectors.transpose())
+    
     k_matrix = orthonormal_matrix_to_special_one(k_matrix)
     l_matrix = orthonormal_matrix_to_special_one(l_matrix)
-    
+        
+    # print(np.linalg.det(k_matrix), np.linalg.det(l_matrix))
     a_tensor_b = matrix_out_magic_basis( np.matmul( v_magic_matrix.conjugate().transpose(),
                                                     np.matmul(k_matrix.transpose(), np.matmul(l_matrix, u_magic_matrix))) )
     a,b = get_single_parts_of_tensor_prod(a_tensor_b)

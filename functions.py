@@ -28,7 +28,8 @@ def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, nu
     list_gates = []
     for index in range(num_layer):
         draft_circuit = give_random_two_qubit_circuit(target_qubits)
-        list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
+        list_gates.extend( draft_circuit )
+        # list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
     list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
     list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
     return list_gates
