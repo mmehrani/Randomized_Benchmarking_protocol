@@ -21,7 +21,7 @@ from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
 from pyquil.quil import *
-from pyquil.gates import *
+from pyquil.gates import RX, RZ, CZ
 
 
 def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
@@ -260,9 +260,6 @@ def plot_bloch_sphere(bloch_vectors):
         bloch_vectors[:,0], bloch_vectors[:,1], bloch_vectors[:, 2], c='#e29d9e', alpha=0.3
     )
 
-# def g_gate(control, target):
-#     return Program( CPHASE01(-np.pi/2, control=control, target=target),
-#                    CPHASE10(-np.pi/2, control=control, target=target) )
 
 def g_gate(control, target):
     return Program( RZ(-3*np.pi/2, qubit = control), RZ(-3*np.pi/2, qubit = target),

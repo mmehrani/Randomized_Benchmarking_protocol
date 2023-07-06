@@ -9,7 +9,9 @@ from scipy.stats import unitary_group
 import scipy.linalg as la
 import cmath
 import numpy as np
+
 from functions import give_v_circuit, arbitary_single_qubit_circuit, get_inverse_circuit
+from linear_algebra_toolkit import *
 
 from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
@@ -59,8 +61,7 @@ def strip_global_factor(matrix):
 
 
 def get_ordered_eig(matrix):
-    # values, vecs = np.linalg.eig(matrix)
-    values, vecs = la.eig(matrix)
+    values, vecs = np.linalg.eig(matrix)
     values_real = [np.round(z.real, 3) for z in values]
     values_imag = [np.round(z.imag, 3) for z in values]
     values_approx = [values_real[i] + 1j*values_imag[i] for i,_ in enumerate(values)]
@@ -75,6 +76,7 @@ def find_phi_theta_omega(single_rot):
     # single_rot = strip_global_factor(single_rot)
     cos_theta_2 = np.round(abs(single_rot[0,0]), decimals=3)
     # print(np.matmul(single_rot, single_rot.T.conj()))
+    # if cos_theta_2 > 1:
     print(cos_theta_2)
     theta = 2*np.arccos(cos_theta_2)
     phi_plus_omega_2 = cmath.phase(single_rot[1,1])
@@ -108,7 +110,6 @@ def get_single_parts_of_tensor_prod(x_tensor_y):
 
 def get_matrix_of_single_member_two_design_two_qubits():
     bm = BenchmarkConnection()
-    
     sequences = generate_rb_sequence(bm, qubits=[0,1], depth=2)
     prog = sequences[:-1][0]
     mat = program_unitary(prog, n_qubits=2)
@@ -134,8 +135,10 @@ def two_design_two_qubits_packs_generator_uni(qmachine, target_qubits, num_layer
 
 def get_corresponding_universal_circuit(u_matrix, target_qubits):
     u_matrix = strip_global_factor(u_matrix)
+    print(u_matrix)
     u_matrix *= np.e**(-1j*np.pi/4)
     
+
     # print(u_matrix.dot(u_matrix.T.conj()))
     
     u_magic_matrix = matrix_in_magic_basis(u_matrix)
@@ -161,13 +164,19 @@ def get_corresponding_universal_circuit(u_matrix, target_qubits):
     v_v_T_eigen_values, v_v_T_eigen_vectors = get_ordered_eig(v_v_T)
     
     
-    print(phase_distance(v_v_T_eigen_values), phase_distance(u_u_T_eigen_values))
+    # print(phase_distance(v_v_T_eigen_values), phase_distance(u_u_T_eigen_values))
+    # print(u_u_T)
+    k_matrix = get_orthogonal_basis(v_v_T)
+    l_matrix = get_orthogonal_basis(u_u_T)
     
-    k_matrix = np.copy(v_v_T_eigen_vectors.transpose()) # transpose needed to be consistent with the paper
-    l_matrix = np.copy(u_u_T_eigen_vectors.transpose())
     
-    k_matrix = orthonormal_matrix_to_special_one(k_matrix)
-    l_matrix = orthonormal_matrix_to_special_one(l_matrix)
+    # print(k_matrix.dot(k_matrix.T))
+    # print(l_matrix.dot(l_matrix.T))
+    # k_matrix = np.copy(v_v_T_eigen_vectors.transpose()) # transpose needed to be consistent with the paper
+    # l_matrix = np.copy(u_u_T_eigen_vectors.transpose())
+    
+    # k_matrix = orthonormal_matrix_to_special_one(k_matrix)
+    # l_matrix = orthonormal_matrix_to_special_one(l_matrix)
         
     # print(np.linalg.det(k_matrix), np.linalg.det(l_matrix))
     a_tensor_b = matrix_out_magic_basis( np.matmul( v_magic_matrix.conjugate().transpose(),
