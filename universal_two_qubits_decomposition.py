@@ -43,34 +43,34 @@ def orthonormal_matrix_to_special_one(ortho_matrix):
         ortho_matrix[0] = ortho_matrix[0] * -1
     return ortho_matrix
 
-def matrix_in_magic_basis(matrix):
-    return np.matmul( lambda_unitary.conj().transpose(), np.matmul(matrix, lambda_unitary) )
+# def matrix_in_magic_basis(matrix):
+#     return np.matmul( lambda_unitary.conj().transpose(), np.matmul(matrix, lambda_unitary) )
 
-def matrix_out_magic_basis(magic_matrix):
-    return np.matmul( lambda_unitary, np.matmul(magic_matrix, lambda_unitary.conj().transpose()) )
+# def matrix_out_magic_basis(magic_matrix):
+#     return np.matmul( lambda_unitary, np.matmul(magic_matrix, lambda_unitary.conj().transpose()) )
 
-def phase_distance(complex_arr:np.array):
-    phases = np.array( [cmath.phase(x) for x in complex_arr] )
-    phases = np.sort(phases)
-    phases = [phases[i+1] - phases[i] for i,x in enumerate(phases[:-1])]
-    return phases
+# def phase_distance(complex_arr:np.array):
+#     phases = np.array( [cmath.phase(x) for x in complex_arr] )
+#     phases = np.sort(phases)
+#     phases = [phases[i+1] - phases[i] for i,x in enumerate(phases[:-1])]
+#     return phases
 
-def strip_global_factor(matrix):
-    shape_length = np.shape(matrix)[0]
-    return matrix / np.linalg.det(matrix)**(1/shape_length)
+# def strip_global_factor(matrix):
+#     shape_length = np.shape(matrix)[0]
+#     return matrix / np.linalg.det(matrix)**(1/shape_length)
 
 
-def get_ordered_eig(matrix):
-    values, vecs = np.linalg.eig(matrix)
-    values_real = [np.round(z.real, 3) for z in values]
-    values_imag = [np.round(z.imag, 3) for z in values]
-    values_approx = [values_real[i] + 1j*values_imag[i] for i,_ in enumerate(values)]
-    phases = [cmath.phase(x) for x in values_approx]
+# def get_ordered_eig(matrix):
+#     values, vecs = np.linalg.eig(matrix)
+#     values_real = [np.round(z.real, 3) for z in values]
+#     values_imag = [np.round(z.imag, 3) for z in values]
+#     values_approx = [values_real[i] + 1j*values_imag[i] for i,_ in enumerate(values)]
+#     phases = [cmath.phase(x) for x in values_approx]
     
-    order = np.argsort(phases)
-    values = values[order]
-    vecs = np.transpose(vecs.transpose()[order])
-    return values, vecs
+#     order = np.argsort(phases)
+#     values = values[order]
+#     vecs = np.transpose(vecs.transpose()[order])
+#     return values, vecs
 
 def find_phi_theta_omega(single_rot):
     # single_rot = strip_global_factor(single_rot)
@@ -101,13 +101,6 @@ def get_program_of_single_unitary(single_qubit_unitary_matrix, target_qubit):
     return arbitary_single_qubit_circuit(phi, theta, omega, qubit = target_qubit)
 
 
-def get_single_parts_of_tensor_prod(x_tensor_y):
-    x = strip_global_factor(partial_trace_on_right(x_tensor_y))
-    y = strip_global_factor(partial_trace_on_left(x_tensor_y))
-    # print(x_tensor_y.dot(x_tensor_y.T.conj()),'\n')
-    # print(x.dot(x.T.conj()), y.dot(y.T.conj()))
-    return x,y
-
 def get_matrix_of_single_member_two_design_two_qubits():
     bm = BenchmarkConnection()
     sequences = generate_rb_sequence(bm, qubits=[0,1], depth=2)
@@ -135,11 +128,8 @@ def two_design_two_qubits_packs_generator_uni(qmachine, target_qubits, num_layer
 
 def get_corresponding_universal_circuit(u_matrix, target_qubits):
     u_matrix = strip_global_factor(u_matrix)
-    print(u_matrix)
+    # print(u_matrix)
     u_matrix *= np.e**(-1j*np.pi/4)
-    
-
-    # print(u_matrix.dot(u_matrix.T.conj()))
     
     u_magic_matrix = matrix_in_magic_basis(u_matrix)
     u_u_T = np.dot(u_magic_matrix, u_magic_matrix.transpose())
@@ -158,34 +148,32 @@ def get_corresponding_universal_circuit(u_matrix, target_qubits):
     v_matrix = program_unitary(v_circuit_zero_one, n_qubits=2)
     v_magic_matrix = matrix_in_magic_basis(v_matrix)
     
-    # print(np.linalg.det(v_magic_matrix))
     
     v_v_T = np.dot(v_magic_matrix, v_magic_matrix.transpose())
     v_v_T_eigen_values, v_v_T_eigen_vectors = get_ordered_eig(v_v_T)
     
     
-    # print(phase_distance(v_v_T_eigen_values), phase_distance(u_u_T_eigen_values))
-    # print(u_u_T)
     k_matrix = get_orthogonal_basis(v_v_T)
     l_matrix = get_orthogonal_basis(u_u_T)
+    # print(k_matrix, '\n',l_matrix)
+    # assert np.all( np.isclose( np.round( l_matrix.dot(l_matrix.T.conj()) , 5), np.eye(4,4) ) )
+    # assert np.all( np.isclose( np.round( k_matrix.dot(k_matrix.T.conj()) , 5), np.eye(4,4) ) )
     
+    assert np.all( np.isclose( l_matrix.dot(l_matrix.T), np.eye(4,4), atol = 1e-05) )
+    assert np.all( np.isclose( k_matrix.dot(k_matrix.T), np.eye(4,4), atol = 1e-05) )
     
-    # print(k_matrix.dot(k_matrix.T))
-    # print(l_matrix.dot(l_matrix.T))
-    # k_matrix = np.copy(v_v_T_eigen_vectors.transpose()) # transpose needed to be consistent with the paper
-    # l_matrix = np.copy(u_u_T_eigen_vectors.transpose())
-    
-    # k_matrix = orthonormal_matrix_to_special_one(k_matrix)
-    # l_matrix = orthonormal_matrix_to_special_one(l_matrix)
+    # print(np.linalg.det(l_matrix), np.linalg.det(k_matrix))
+    # assert np.isclose( np.linalg.det(k_matrix), 1)
+    # assert np.isclose( np.linalg.det(l_matrix), 1)
         
     # print(np.linalg.det(k_matrix), np.linalg.det(l_matrix))
     a_tensor_b = matrix_out_magic_basis( np.matmul( v_magic_matrix.conjugate().transpose(),
                                                     np.matmul(k_matrix.transpose(), np.matmul(l_matrix, u_magic_matrix))) )
-    a,b = get_single_parts_of_tensor_prod(a_tensor_b)
+    a,b = break_rotation_tensor_into_two(a_tensor_b)
     prog_a, prog_b = get_program_of_single_unitary(a, target_qubit = target_qubits[0]), get_program_of_single_unitary(b, target_qubit = target_qubits[1])
     
     c_tensor_d = matrix_out_magic_basis( np.matmul(l_matrix.transpose(), k_matrix) )
-    c,d = get_single_parts_of_tensor_prod(c_tensor_d)
+    c,d = break_rotation_tensor_into_two(c_tensor_d)
     prog_c, prog_d = get_program_of_single_unitary(c, target_qubit = target_qubits[0]), get_program_of_single_unitary(d, target_qubit = target_qubits[1])
     
     prog = Program(prog_a, prog_b, v_circuit, prog_c, prog_d)
@@ -194,9 +182,12 @@ def get_corresponding_universal_circuit(u_matrix, target_qubits):
 
 if __name__ == '__main__':
     qmachine = get_qc("2q-qvm")
-    # pack_mat = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 5)
+    pack_mat = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 10)
     # circuit = get_corresponding_universal_circuit(pack_mat, [0,1])
-    mat = get_matrix_of_single_member_two_design_two_qubits()
-    program = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 2)
+    u_matrix = get_matrix_of_single_member_two_design_two_qubits()
+    # u_matrix = unitary_group.rvs(4)
+    circuit = get_corresponding_universal_circuit(u_matrix, target_qubits=[0,1])
+    
+    # program = two_design_two_qubits_packs_generator_uni(qmachine, [0,1], 2)
     
     
