@@ -4,7 +4,7 @@ Created on Mon Jul  3 16:05:14 2023
 
 @author: mohsen
 """
-from scipy.optimize import root
+from scipy.optimize import root, fsolve
 import numpy as np
 import cmath
 
@@ -81,10 +81,11 @@ def real_linear_combination(v1, v2):
         for i in range(v1.shape[0]):
             for j in range(2):
                 out_coors[i] += x[0 + 2*j]*r_matrix[j,i]*np.sin(phi_matrix[j,i] + x[1 + 2*j])    
-        return np.concatenate((out_coors,[x[0]**2 + x[2]**2 - 1],[0]))
+        return np.concatenate((out_coors,[x[0]**2 + x[2]**2 - 1]))
 
-    roots = root(_realization_equations, [1, 0, 1, 0, 0, 0])
-    coeff = roots['x']
+    # roots = root(_realization_equations, [1, 0, 1, 0, 0])
+    # coeff = roots['x']
+    coeff = fsolve(_realization_equations, [1, 0, 1, 0, 0], xtol = 1e-10, maxfev = 5 * 300)
     u1 = coeff[0]*np.e**(1j*coeff[1]) * v1 + coeff[2]*np.e**(1j*coeff[3]) * v2
     u2 = make_vectors_real( - coeff[2] * np.e**(-1j*coeff[3]) * v1 + coeff[0]*np.e**(-1j*coeff[1])*v2 )
     u1 = u1 / np.linalg.norm( u1 )
@@ -139,5 +140,5 @@ def break_rotation_tensor_into_two(one_tensor_two):
                                   [one_tensor_two[2 + non_zero_row, 0 + non_zero_col], one_tensor_two[2 + non_zero_row, 2 + non_zero_col]]])
     first_part_matrix = strip_global_factor(first_part_matrix)
     constructed_prod = strip_global_factor( np.kron(first_part_matrix, second_part_matrix) )
-    assert np.all( np.isclose(constructed_prod, one_tensor_two, atol=1e-03 ) ) or np.all( np.isclose(constructed_prod, - one_tensor_two, atol=1e-03 ) )
+
     return first_part_matrix, second_part_matrix

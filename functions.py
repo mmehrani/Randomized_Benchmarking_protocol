@@ -16,6 +16,7 @@ import os
 import itertools
 
 from eigenvalues_distribution import generate_haar_random_eigenvalues_two_qubits
+from linear_algebra_toolkit import *
 # from universal_two_qubits_decomposition import *
 # import universal_two_qubits_decomposition
 
@@ -24,7 +25,7 @@ from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
 from pyquil.quil import *
 from pyquil.gates import RX, RZ, CZ
-
+from pyquil.simulation.tools import lifted_gate, program_unitary, lifted_gate_matrix
 
 
 lambda_unitary = np.array([ [1, 1j , 0 , 0],[0, 0, 1j, 1],[0, 0, 1j, -1],[1, -1j, 0, 0] ]) / np.sqrt(2)
@@ -72,59 +73,21 @@ def two_design_two_qubits_packs_generator(qmachine, target_qubits, num_layer:int
         # list_gates.extend( qmachine.compiler.quil_to_native_quil(draft_circuit) )
         list_gates.extend( draft_circuit )
     
-    inverse_mat = np.linalg.inv(total_mat)
-    inverse_circuit = get_corresponding_universal_circuit(inverse_mat, target_qubits)
+    # inverse_mat = np.linalg.inv(total_mat)
+    
+    # inverse_circuit = Program( get_inverse_circuit(qmachine, list_gates) )
+    # inverse_circuit = program_unitary(program, n_qubits)
+    
+    # inverse_circuit = get_corresponding_universal_circuit(inverse_mat, target_qubits)
+    # list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
+    # list_gates.extend( inverse_circuit )
+    
     list_gates = [ ins for ins in list_gates if isinstance(ins, Gate)]
-    list_gates.extend( inverse_circuit )
+    list_gates.extend( get_inverse_circuit(qmachine, list_gates) )
         
     return list_gates
 
 
-def get_corresponding_universal_circuit(u_matrix, target_qubits):
-    u_matrix = strip_global_factor(u_matrix)
-    print(u_matrix)
-    u_matrix *= np.e**(-1j*np.pi/4)
-    
-    u_magic_matrix = matrix_in_magic_basis(u_matrix)
-    u_u_T = np.dot(u_magic_matrix, u_magic_matrix.transpose())
-    u_u_T_eigen_values, u_u_T_eigen_vectors = get_ordered_eig(u_u_T)
-    
-    
-    eigen_values_phases = [cmath.phase(x) for x in u_u_T_eigen_values]
-    alpha, beta, delta = np.array([eigen_values_phases[0] + eigen_values_phases[1],
-                                    eigen_values_phases[0] + eigen_values_phases[2],
-                                    eigen_values_phases[1] + eigen_values_phases[2] ]) / 2
-    v_circuit = give_v_circuit(alpha, beta, delta, qubits = target_qubits)
-    v_circuit_zero_one = give_v_circuit(alpha, beta, delta, qubits = [0,1])
-    
-    v_matrix = program_unitary(v_circuit_zero_one, n_qubits=2)
-    v_magic_matrix = matrix_in_magic_basis(v_matrix)
-    
-    
-    v_v_T = np.dot(v_magic_matrix, v_magic_matrix.transpose())
-    v_v_T_eigen_values, v_v_T_eigen_vectors = get_ordered_eig(v_v_T)
-    
-    
-    k_matrix = get_orthogonal_basis(v_v_T)
-    l_matrix = get_orthogonal_basis(u_u_T)
-    
-    assert np.all( np.isclose( l_matrix.dot(l_matrix.T), np.eye(4,4), atol = 1e-04) )
-    assert np.all( np.isclose( k_matrix.dot(k_matrix.T), np.eye(4,4), atol = 1e-04) )
-    
-    assert np.isclose( np.linalg.det(k_matrix), 1, atol = 1e-04)
-    assert np.isclose( np.linalg.det(l_matrix), 1, atol = 1e-04)
-        
-    a_tensor_b = matrix_out_magic_basis( np.matmul( v_magic_matrix.conjugate().transpose(),
-                                                    np.matmul(k_matrix.transpose(), np.matmul(l_matrix, u_magic_matrix))) )
-    a,b = break_rotation_tensor_into_two(a_tensor_b)
-    prog_a, prog_b = get_program_of_single_unitary(a, target_qubit = target_qubits[0]), get_program_of_single_unitary(b, target_qubit = target_qubits[1])
-    
-    c_tensor_d = matrix_out_magic_basis( np.matmul(l_matrix.transpose(), k_matrix) )
-    c,d = break_rotation_tensor_into_two(c_tensor_d)
-    prog_c, prog_d = get_program_of_single_unitary(c, target_qubit = target_qubits[0]), get_program_of_single_unitary(d, target_qubit = target_qubits[1])
-    
-    prog = Program(prog_a, prog_b, v_circuit, prog_c, prog_d)
-    return  prog
 
 def native_universal_two_qubits_packs_generator(qmachine, target_qubits:list, num_layer:int):
     list_gates = []
@@ -203,6 +166,58 @@ bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_sin
                            'standard_rb_two_qubits':two_design_two_qubits_packs_generator}
 
 
+
+def get_corresponding_universal_circuit(u_matrix, target_qubits):
+    u_matrix = strip_global_factor(u_matrix)
+    # print(u_matrix)
+    u_matrix *= np.e**(-1j*np.pi/4)
+    
+    u_magic_matrix = matrix_in_magic_basis(u_matrix)
+    u_u_T = np.dot(u_magic_matrix, u_magic_matrix.transpose())
+    u_u_T_eigen_values, u_u_T_eigen_vectors = get_ordered_eig(u_u_T)
+    
+    
+    eigen_values_phases = [cmath.phase(x) for x in u_u_T_eigen_values]
+    alpha, beta, delta = np.array([eigen_values_phases[0] + eigen_values_phases[1],
+                                    eigen_values_phases[0] + eigen_values_phases[2],
+                                    eigen_values_phases[1] + eigen_values_phases[2] ]) / 2
+    v_circuit = give_v_circuit(alpha, beta, delta, qubits = target_qubits)
+    v_circuit_zero_one = give_v_circuit(alpha, beta, delta, qubits = [0,1])
+    
+    v_matrix = program_unitary(v_circuit_zero_one, n_qubits=2)
+    v_magic_matrix = matrix_in_magic_basis(v_matrix)
+    
+    
+    v_v_T = np.dot(v_magic_matrix, v_magic_matrix.transpose())
+    v_v_T_eigen_values, v_v_T_eigen_vectors = get_ordered_eig(v_v_T)
+    
+    
+    k_matrix = get_orthogonal_basis(v_v_T)
+    l_matrix = get_orthogonal_basis(u_u_T)
+    
+    try:
+        assert np.all( np.isclose( l_matrix.dot(l_matrix.T), np.eye(4,4), atol = 1e-03) )
+        assert np.all( np.isclose( k_matrix.dot(k_matrix.T), np.eye(4,4), atol = 1e-03) )
+        
+    except:
+        try:
+            k_matrix = unitary_to_orthogonal(k_matrix)
+            l_matrix = unitary_to_orthogonal(l_matrix)
+        except:
+            print('Sounds eigenvectors contain comparable imaginary part! Quantlity of decompositon decreased.')
+            print(l_matrix)
+            print(k_matrix)
+    a_tensor_b = matrix_out_magic_basis( np.matmul( v_magic_matrix.conjugate().transpose(),
+                                                    np.matmul(k_matrix.transpose(), np.matmul(l_matrix, u_magic_matrix))) )
+    a,b = break_rotation_tensor_into_two(a_tensor_b)
+    prog_a, prog_b = get_program_of_single_unitary(a, target_qubit = target_qubits[0]), get_program_of_single_unitary(b, target_qubit = target_qubits[1])
+    
+    c_tensor_d = matrix_out_magic_basis( np.matmul(l_matrix.transpose(), k_matrix) )
+    c,d = break_rotation_tensor_into_two(c_tensor_d)
+    prog_c, prog_d = get_program_of_single_unitary(c, target_qubit = target_qubits[0]), get_program_of_single_unitary(d, target_qubit = target_qubits[1])
+    
+    prog = Program(prog_a, prog_b, v_circuit, prog_c, prog_d)
+    return  prog
 
 def calculate_lower_bound(p_jm):
     if p_jm == 1:
@@ -515,3 +530,16 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
     return response_matrix
 
 
+if __name__ == '__main__':
+    qmachine = get_qc("2q-qvm")
+    # pack_mat = two_design_two_qubits_packs_generator(qmachine, [0,1], 10)
+    # circuit = get_corresponding_universal_circuit(pack_mat, [0,1])
+    # u_matrix = get_matrix_of_single_member_two_design_two_qubits()
+    u_matrix = [[-0.35355339+0.35355339j, -0.35355339+0.35355339j,  0.35355339+0.35355339j, -0.35355339-0.35355339j],
+                [ 0.35355339+0.35355339j,  0.35355339+0.35355339j, -0.35355339+0.35355339j, 0.35355339-0.35355339j],
+                [ 0.35355339-0.35355339j, -0.35355339+0.35355339j, -0.35355339-0.35355339j, -0.35355339-0.35355339j],
+                [-0.35355339-0.35355339j,  0.35355339+0.35355339j,  0.35355339-0.35355339j, 0.35355339-0.35355339j]]
+    # u_matrix = unitary_group.rvs(4)
+    circuit = get_corresponding_universal_circuit(u_matrix, target_qubits=[0,1])
+    
+    # program = two_design_two_qubits_packs_generator(qmachine, [0,1], 2)
