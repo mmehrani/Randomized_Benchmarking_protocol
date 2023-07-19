@@ -213,49 +213,63 @@ def native_rigetti_single_qubit_packs_generator(qmachine, target_qubit, num_laye
     list_gates.extend(get_inverse_circuit(qmachine, list_gates))
     return list_gates
 
+def get_matrix_of_single_member_two_design_one_qubit():
+    """
+    Generate a matrix of a single member of the two-design on one qubit.
+
+    Returns:
+        np.ndarray: Matrix of a single member of the two-design on one qubit.
+    """
+    bm = BenchmarkConnection()
+    sequences = generate_rb_sequence(bm, qubits=[0], depth=2)
+    prog = sequences[:-1][0]
+    mat = program_unitary(prog, n_qubits=1)
+    return mat
 
 def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer: int):
-    """
-    Generate gate sequences using the two-design on a single qubit.
+    
+    
+    if type(target_qubit) == list:
+        if len(target_qubit) == 1:
+            target_qubit = target_qubit[0]
+        else:
+            raise ValueError('Only pass one qubit!')
+    else:
+        ValueError('Indicate one qubit surrounded by [] like [0]')
+        
+    list_gates = []
 
-    Args:
-        qmachine: Quantum machine.
-        target_qubit (int): Target qubit index.
-        num_layer (int): Number of layers.
+    for index in range(0, num_layer):
+        mat = get_matrix_of_single_member_two_design_one_qubit()
 
-    Returns:
-        list: List of gates representing the gate sequence.
-    """
-    bm = BenchmarkConnection()
+        list_gates.extend(get_program_of_single_unitary(mat, target_qubit))
+        
+    list_gates = [ins for ins in list_gates if isinstance(ins, Gate)]
+    list_gates.extend(get_inverse_circuit(qmachine, list_gates))
+    return list_gates
 
-    sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
-    gates_list = []
-    for prog in sequences:
-        gates_list.extend(prog.instructions)
 
-    return gates_list
+# def two_design_single_qubit_packs_generator_non_uniform(qmachine, target_qubit, num_layer: int):
+#     """
+#     Generate non-uniform gate sequences using the two-design on a single qubit.
 
-def two_design_single_qubit_packs_generator_non_uniform(qmachine, target_qubit, num_layer: int):
-    """
-    Generate non-uniform gate sequences using the two-design on a single qubit.
+#     Args:
+#         qmachine: Quantum machine.
+#         target_qubit (int): Target qubit index.
+#         num_layer (int): Number of layers.
 
-    Args:
-        qmachine: Quantum machine.
-        target_qubit (int): Target qubit index.
-        num_layer (int): Number of layers.
+#     Returns:
+#         list: List of gates representing the gate sequence.
+#     """
+#     bm = BenchmarkConnection()
 
-    Returns:
-        list: List of gates representing the gate sequence.
-    """
-    bm = BenchmarkConnection()
+#     sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
+#     gates_list = []
 
-    sequences = generate_rb_sequence(bm, qubits=target_qubit, depth=num_layer)
-    gates_list = []
+#     for prog in sequences:
+#         gates_list.extend(prog.instructions)
 
-    for prog in sequences:
-        gates_list.extend(prog.instructions)
-
-    return gates_list
+#     return gates_list
 
 
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
