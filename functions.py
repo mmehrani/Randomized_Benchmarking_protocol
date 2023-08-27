@@ -19,12 +19,13 @@ from eigenvalues_distribution import generate_haar_random_eigenvalues_two_qubits
 from linear_algebra_toolkit import *
 # from universal_two_qubits_decomposition import *
 # import universal_two_qubits_decomposition
+from noise_models import *
 
 from pyquil import get_qc, Program
 from pyquil.api import get_qc, BenchmarkConnection
 from forest.benchmarking.randomized_benchmarking import generate_rb_sequence
 from pyquil.quil import *
-from pyquil.gates import RX, RZ, CZ
+from pyquil.gates import RX, RZ, CZ, I
 from pyquil.simulation.tools import lifted_gate, program_unitary, lifted_gate_matrix
 
 
@@ -531,7 +532,7 @@ def daggered_gate(gate):
     The function checks the name of the gate and returns the corresponding daggered gate. For gates CZ, CNOT, and H, the function returns the same gate. For XY, S, RX, RY, and RZ gates, the function calculates the negative angle and returns the corresponding daggered gate. If the gate name is not supported, a ValueError is raised.
 
     """
-    if gate.name in ['CZ', 'CNOT', 'H']:
+    if gate.name in ['CZ', 'CNOT', 'H', 'I']:
         return gate
     elif gate.name == 'XY':
         angle = gate.params[0]
@@ -662,12 +663,15 @@ def give_v_circuit(alpha, beta, delta, qubits=[0, 1]):
     """
     prog = Program(RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(-np.pi/2, qubits[0]),
                    CZ(control=qubits[1], target=qubits[0]),
+                   I(qubits[0]), I(qubits[1]),
                    RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(-np.pi/2, qubits[0]), RZ(delta, qubits[0]),
                    RX(np.pi/2, qubits[1]), RZ(np.pi/2 + beta, qubits[1]), RX(np.pi/2, qubits[1]),
-                   CZ(control=qubits[0], target=qubits[1]))
+                   CZ(control=qubits[0], target=qubits[1]),
+                   I(qubits[0]), I(qubits[1]))
     prog += Program(RZ(np.pi, qubits[1]), RX(np.pi/2, qubits[1]), RZ(np.pi/2 + alpha, qubits[1]), RX(-np.pi/2, qubits[1]),
                     RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(-np.pi/2, qubits[0]),
                     CZ(control=qubits[1], target=qubits[0]),
+                    I(qubits[0]), I(qubits[1]),
                     RZ(np.pi, qubits[0]), RX(np.pi/2, qubits[0]), RZ(np.pi/2, qubits[0]), RX(-np.pi/2, qubits[0]))
     return prog
 
@@ -807,8 +811,9 @@ def run_bench_experiment(qmachine, program, number_of_shots):
     program = program.wrap_in_numshots_loop(number_of_shots)
 
     # Run the program
-    executable = qmachine.compile(program)
-    result = qmachine.run(executable)
+    # executable = qmachine.compile(program)
+    # result = qmachine.run(executable)
+    result = qmachine.run(program)
     measured_outcome = result.readout_data.get('ro')
     return measured_outcome
 
@@ -943,21 +948,31 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
     n_qubits = len(target_qubits)
     sequ_num = len(rb_experiments)
     response_matrix = np.zeros((sequ_num, number_of_shots))
-
+    
+    damping_per_CZ = 0.01
     for i_sequ, sequ in enumerate(tqdm(rb_experiments, desc='Examing the seq.')):
         prog = Program()  # All qubits begin with |0> state
+        ro = prog.declare('ro', 'BIT', n_qubits)
         for gate in sequ:
             prog += gate
-
-        # Do not let the quilc alter the gates by optimization
-        prog = Program('PRAGMA PRESERVE_BLOCK') + prog
-        prog += Program('PRAGMA END_PRESERVE_BLOCK')
-
+        
+        corrupted_CZ = append_kraus_to_gate(
+        tensor_kraus_maps(
+            dephasing_kraus_map(damping_per_CZ),
+            dephasing_kraus_map(damping_per_CZ)
+        ),
+        np.diag([1, 1, 1, -1]))
+        
         # Measurements
-        ro = prog.declare('ro', 'BIT', n_qubits)
         for ind, qubit_ind in enumerate(target_qubits):
             prog += MEASURE(qubit_ind, ro[ind])
+            
+        prog.define_noisy_gate("CZ", target_qubits, corrupted_CZ)
 
+        # Do not let the quilc alter the gates by optimization        
+        prog = Program('PRAGMA PRESERVE_BLOCK') + prog
+        prog += Program('PRAGMA END_PRESERVE_BLOCK')
+        
         response = convert_measured_to_response_matrix(run_bench_experiment(qmachine, prog, number_of_shots))
         response_matrix[i_sequ, :] = np.copy(response)
     return response_matrix
