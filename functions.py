@@ -769,7 +769,7 @@ def plot_decay(layers_arr, avg_fdlty_arr, err_fdlty_arr, label: str, *args, **kw
     err[-1][0].set_alpha(0.5)
     between_layers = np.arange(layers_arr.min(), layers_arr.max()+1, 1).astype('int')
     axes.plot(between_layers, decay_func(between_layers, *popt), color=err[0].get_color(),
-              label=label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt, 4)))
+              label=label + ':' + r'${1}*{0}^m+{2}$'.format(*np.round(popt, 3)))
 
     plt.xlabel('Depth', fontsize=18)
     plt.ylabel('Average of Fidelity', fontsize=16)
@@ -949,7 +949,8 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
     sequ_num = len(rb_experiments)
     response_matrix = np.zeros((sequ_num, number_of_shots))
     
-    damping_per_CZ = 0.01
+    damping_per_CZ = 0.1
+    depol_per_CZ = 0.1
     for i_sequ, sequ in enumerate(tqdm(rb_experiments, desc='Examing the seq.')):
         prog = Program()  # All qubits begin with |0> state
         ro = prog.declare('ro', 'BIT', n_qubits)
@@ -958,10 +959,11 @@ def find_machine_response(qmachine, rb_experiments, number_of_shots):
         
         corrupted_CZ = append_kraus_to_gate(
         tensor_kraus_maps(
-            dephasing_kraus_map(damping_per_CZ),
-            dephasing_kraus_map(damping_per_CZ)
+            depol_ad_channel(depol_prob=depol_per_CZ, damp_prob=damping_per_CZ),
+            depol_ad_channel(depol_prob=depol_per_CZ, damp_prob=damping_per_CZ)
         ),
         np.diag([1, 1, 1, -1]))
+        
         
         # Measurements
         for ind, qubit_ind in enumerate(target_qubits):

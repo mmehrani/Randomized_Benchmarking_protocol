@@ -6,6 +6,51 @@ Created on Mon Aug 21 16:19:37 2023
 """
 import numpy as np
 
+
+pauli_ops = [np.eye(2),
+             np.array([ [0, 1], [1, 0] ]),
+            np.array([ [0, -1j], [1j, 0] ]),
+            np.array([ [1, 0], [0, -1] ])]
+
+
+
+def damping_channel(damp_prob=.1):
+    """
+    Generate the Kraus operators corresponding to an amplitude damping
+    noise channel.
+
+    :params float damp_prob: The one-step damping probability.
+    :return: A list [k1, k2] of the Kraus operators that parametrize the map.
+    :rtype: list
+    """
+    damping_op = np.sqrt(damp_prob) * np.array([[0, 1],
+                                                [0, 0]])
+
+    residual_kraus = np.diag([1, np.sqrt(1-damp_prob)])
+    return [residual_kraus, damping_op]
+
+
+def depolarising_channel(depol_prob=.1):
+    """
+    Generate the Kraus operators corresponding to an amplitude damping
+    noise channel.
+
+    :params float damp_prob: The one-step damping probability.
+    :return: A list [k1, k2] of the Kraus operators that parametrize the map.
+    :rtype: list
+    """
+    depolarizing_channel_kraus = np.array( [ np.sqrt(1 - 3*depol_prob/4)*pauli_ops[0],
+                                            np.sqrt(depol_prob/4)*pauli_ops[1],
+                                            np.sqrt(depol_prob/4)*pauli_ops[2],
+                                            np.sqrt(depol_prob/4)*pauli_ops[3]], dtype = np.complex128)
+    
+    return depolarizing_channel_kraus
+
+
+def depol_ad_channel(depol_prob = 0.01, damp_prob = 0.01):
+    depol_kraus = depolarising_channel(depol_prob)
+    damp_kraus = damping_channel(damp_prob)
+    return np.array( [m @ k for k in depol_kraus for m in damp_kraus] )
 # def damping_channel(damp_prob=.1):
 #     """
 #     Generate the Kraus operators corresponding to an amplitude damping
@@ -19,25 +64,11 @@ import numpy as np
 #                                                 [0, 0]])
 
 #     residual_kraus = np.diag([1, np.sqrt(1-damp_prob)])
-#     return [residual_kraus, damping_op]
-
-# # def damping_channel(damp_prob=.1):
-# #     """
-# #     Generate the Kraus operators corresponding to an amplitude damping
-# #     noise channel.
-
-# #     :params float damp_prob: The one-step damping probability.
-# #     :return: A list [k1, k2] of the Kraus operators that parametrize the map.
-# #     :rtype: list
-# #     """
-# #     damping_op = np.sqrt(damp_prob) * np.array([[0, 1],
-# #                                                 [0, 0]])
-
-# #     residual_kraus = np.diag([1, np.sqrt(1-damp_prob)])
     
-# #     kraus_set_two_qubits = [np.kron(damping_op, damping_op), np.kron(damping_op, residual_kraus),
-# #                             np.kron(residual_kraus, damping_op), np.kron(residual_kraus, residual_kraus)]
-# #     return np.array(kraus_set_two_qubits)
+#     kraus_set_two_qubits = [np.kron(damping_op, damping_op), np.kron(damping_op, residual_kraus),
+#                             np.kron(residual_kraus, damping_op), np.kron(residual_kraus, residual_kraus)]
+#     return np.array(kraus_set_two_qubits)
+
 def append_kraus_to_gate(kraus_ops, g):
     """
     Follow a gate `g` by a Kraus map described by `kraus_ops`.
@@ -49,17 +80,17 @@ def append_kraus_to_gate(kraus_ops, g):
     return [kj.dot(g) for kj in kraus_ops]
 
 
-# def append_damping_to_gate(gate, damp_prob=.1):
-#     """
-#     Generate the Kraus operators corresponding to a given unitary
-#     single qubit gate followed by an amplitude damping noise channel.
+def append_damping_to_gate(gate, damp_prob=.1):
+    """
+    Generate the Kraus operators corresponding to a given unitary
+    single qubit gate followed by an amplitude damping noise channel.
 
-#     :params np.ndarray|list gate: The 2x2 unitary gate matrix.
-#     :params float damp_prob: The one-step damping probability.
-#     :return: A list [k1, k2] of the Kraus operators that parametrize the map.
-#     :rtype: list
-#     """
-#     return append_kraus_to_gate(damping_channel(damp_prob), gate)
+    :params np.ndarray|list gate: The 2x2 unitary gate matrix.
+    :params float damp_prob: The one-step damping probability.
+    :return: A list [k1, k2] of the Kraus operators that parametrize the map.
+    :rtype: list
+    """
+    return append_kraus_to_gate(damping_channel(damp_prob), gate)
 
 
 def dephasing_kraus_map(p=.1):
