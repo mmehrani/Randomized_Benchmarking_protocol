@@ -273,7 +273,7 @@ def two_design_single_qubit_packs_generator(qmachine, target_qubit, num_layer: i
 
 
 bench_protocol_func_dict = {'native_conditional_single_qubit':native_rigetti_single_qubit_packs_generator,
-                           'native_conditional_conditional_two_qubits':native_universal_two_qubits_packs_generator,
+                           'native_conditional_two_qubits':native_universal_two_qubits_packs_generator,
                            'standard_rb_single_qubit':two_design_single_qubit_packs_generator,
                            'standard_rb_two_qubits':two_design_two_qubits_packs_generator}
 
